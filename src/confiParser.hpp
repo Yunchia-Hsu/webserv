@@ -1,6 +1,6 @@
 
-#ifndef CONFIPARSER_HPP
-#define CONFIPARSER_HPP
+#ifndef ConfiParser_HPP
+#define ConfiParser_HPP
 
 
 #include <iostream>
@@ -20,7 +20,6 @@ class ConfiParser
         void parseFile(const std::string& filename);
 //        void testPrinter() const;
 
-    
 };
 
 #endif
