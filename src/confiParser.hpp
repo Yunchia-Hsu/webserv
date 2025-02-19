@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 class ConfiParser
 {
@@ -18,7 +19,7 @@ class ConfiParser
         ~ConfiParser();
 
         void parseFile(const std::string& filename);
-//        void testPrinter() const;
+        void testPrinter() const;
 
 };
 
