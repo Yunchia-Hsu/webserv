@@ -20,7 +20,13 @@ int main (int argc, char ** argv)
 	if (socket_fd <= 0)
 		perror("socket created error");
 
+	//identify sockets
+	struct socketaddr_in;
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_port = htons(8080);
+	serverAddr.sin_addr.s_addr = INADDR_ANY;// allow any IP 192.168...8080  or 127.0.0.1.8080
 
+	bind(socket_fd, (struct sockaddr*) & serverAddr, sizeof (serverAddr));
 
 
 
