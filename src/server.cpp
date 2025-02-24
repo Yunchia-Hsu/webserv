@@ -4,30 +4,172 @@
 #include <unistd.h> // cloase(), write(), read()
 #include <semaphore.h>//sem_t()
 #include <pthread.h> //pthread
-
+#include <vector>
+#include "server.hpp" 
 #define PORT 8080
+#define cilent_message_SIZE 1024
+sem_t mutex;
+int thread_count = 0;
+
+std::vector<std::string > serverdata;
+
+std::string getStr(std::string sql, char end)
+{
+    int counter = 0;
+    std::string retStr = "";
+    while(sql[counter]) != '\0'
+    {
+        if(sql[counter] == end)
+        {
+            break;
+        }   
+        retStr += sql[counter];
+        counter++;
+    }
+    return (retStr);
+}
+
+
+
+void send_message(int fd, std::string filePath, std:;string headerFile)
+{
+    
+}
+
+
+
+void getData(std::string requestType, std::string client_message)
+{
+    std::string extract;
+    std::string data = client_message;
+
+    if(requestType == "GET")
+    {
+        data.erase(0, getstring(data,' ').length()  + 1);
+        data = getStr(data, ' ');//extract file path
+        data.erase(0, getStr(data, '?').length() + 1); //index.html/?a=c  so we get a=c
+    }
+    else if (requestType == "POST")
+    {
+       int counter = data.length*( ) - 1;
+       while(counter > 0)
+       {
+            if (data[counter] == ' ' || data[counter] == '\n')
+            {
+                break;
+            }
+            counter--;
+       }
+       data.erase(0,counter + 1);
+       int found = data.find("=");
+       if(found == string :: npos)
+       {
+            data = ""; // 如果沒有= 就不是post直接設成null
+       }
+    }
+    //check cookies
+    int found = client_message.find("Cookie:");
+    if (found != std::string::npos)//found cookie
+    {
+        client_message.erase(0, found + 8); //delete everything before cookie and cookie this word
+        client_message = getStr(client_message, ' ');
+        data = data+"&" + getStr(client_message, '\n');
+    }
+
+    while(data.length() > 0)
+    {
+        extract = getStr(data, '&');
+        serverData.push_back(extract);
+        data.erase(0,getStr(data,'&').length() + 1);
+    }
+}
+
+
+std::string findFileExt(std::string fileEx)
+{
+    for (int i = 0; i < sizeof(fileExtension); i++)
+    {
+        if (fileEx == fileExtension[i])
+        {
+            return ContentType[i];
+        }
+       
+    }
+     std::cout << "serving as text/html" << fileEx.c_str()<<std::endl;
+     return("Content-Type:text text/html\r\n\r\n");
+}
+
+
 
 void *connection_handler(void *socket_desc)
 {
-// recv to get client's http request
+    int newSock = *((int *)socket_desc);
+    char client_message[client_message_SIZE];
+    int request = read(newSocke, client_message, client_message_SIZE);//讀取client HTTP 請求
+    std::string message = client_message;
+    sem_wait(&mutex);
+    thread_count++
+    std::cout << thread_count << " threads are running" << std::endl;
+    if (thread_count > 20)
+    {
+        write(newSock, Message[BAD_REQUEST].c_str(), Message[BAD_REQUEST].length());
+        thread_count--;
+        close(newSock);
+        sem_post(&mutex);
+        pthread_exit(NULL);
+    }
+    sem_post(&mutex);
+    if (request < 0)
+    {
+        puts("recv failed");
+    }
+    else if (request == 0)
+    {
+        puts("client disconnected unexpectedly");
+    }
+    else
+    {
+        //std::cout << "client message:" << message << std::endl;
+         // 3) 解析 HTTP 請求行
+        std::string requestType = getStr(message, ' ');// 例如取 "GET" 或 "POST"
+        message.erase(0, requestType.length() + 1);  // 移除已取走的部分
+        std::string requestFile = getStr(message, ' '); // 例如取 "/index.html"
+        std::string requestF = requestFile;
+        std::string requestExt = requestF.erase(0,getStr(requestF, '.').length() + 1);
+        std::string fileExt = getStr(getStr(fileExt,'/'), '?');
+        requestFile = getStr(requestFile,'.')+"."+fileEx;//取得副檔名 fileExt (如 html / php / png
 
-//parse HTTP header 
+        if(requestType == "GET" || requestType == "POST")
+        {
+            if(requestType == "GET" || requestType == "POST")
+            {
+                reqestFile = "/index.html";
+            }
+            if(fileEx == "php")
+            {
+                //php-cgi
+                getData(requestType, client_message);
+            }
+            sem_wait(&mutex);
+            send_message(newSock, requestFile, findFileExt(fileEx));//傳送對應的檔案內容與 MIME Type。
+            sem_post(&mutex);
+        }
+        std::cout<< "\n------exiting server------\n";
+        close(newSock);
+        sem_wait(&mutex);//進入臨界區，取得互斥鎖，確保同一時間只有一個執行緒能修改全域變數
+        thread_count--;
+        sem_post(&mutex);//離開臨界區，釋放互斥鎖
+        pthread_exit(NULL);
 
-//if parse fail return error 400
-
-
-//try to open requested file if failed return 404
-
-//after found the file according to eh file extension, send back the file to the clien by using send()
-
-//close clinet_fd/ client_socket
-
-
-
+       
+    }
+    return 0;
 }
 
 int main(int argc , char ** argv)
 {
+    
+    sem_init(&mutex, 0, 1);
     int server_socket, client_socket, *thread_sock;
     int randomPORT = PORT;
     struct sockaddr_in server_address, client_address;
@@ -85,6 +227,7 @@ int main(int argc , char ** argv)
 		thread_sock = new_int(); //a pointer to the client socket
 		*thread_sock = client_socket;
 
+    //伺服器為每個客戶端連線建立一個執行緒 thread
 	if(pthread_create(&multi_thread, NULL, connection_handler, (void*)thread_sock_) > 0)
 	{
 		perror("could not create thread");
