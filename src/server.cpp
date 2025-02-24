@@ -5,7 +5,10 @@
 #include <semaphore.h>//sem_t()
 #include <pthread.h> //pthread
 #include <vector>
+#include <stat.h>
+#include <sendfile.h>
 #include "server.hpp" 
+
 #define PORT 8080
 #define cilent_message_SIZE 1024
 sem_t mutex;
@@ -17,7 +20,7 @@ std::string getStr(std::string sql, char end)
 {
     int counter = 0;
     std::string retStr = "";
-    while(sql[counter]) != '\0'
+    while(sql[counter] != '\0')
     {
         if(sql[counter] == end)
         {
@@ -31,9 +34,42 @@ std::string getStr(std::string sql, char end)
 
 
 
-void send_message(int fd, std::string filePath, std:;string headerFile)
+void send_message(int fd, std::string filePath, std::string headerFile)//headerFile：HTTP 標頭中額外的部分，可能用來告知內容類型、編碼等訊息。
 {
-    
+    std::string header = Message[HTTP_HEADER]+ headerFile;//利用預先定義的訊息和額外參數，生成完整的回應標頭，並寫入 socket。
+	filePath = "/public"+filePath;//index.html    將檔案路徑修改為 /public 目錄下的路徑，並開啟檔案。如果檔案無法開啟，則印出錯誤並返回。
+	struct stat stat_buf; // hld information of our file to send 
+
+	write (fd, header.c_str(), header.length());
+
+	int fdimg = open(filePath.c_str(), 0_RDONLY);
+
+	if (fdimg < 0)
+	{
+		std::cout << "cannot opne file path" << std::endl;
+		return; 
+	}
+	fstat(fdimg, &stat_buf);//取得開啟檔案的metadata（例如檔案大小與檔案系統推薦的塊大小），將結果存入 stat_buf。
+	int img_total_size = stat_buf.st_size;
+	int block_size = stat_buf.st_blksize;
+
+	if (fdimg >= 0)
+	{
+		size_t semt_size;
+		while (img_total_size > 0)
+		{
+			int send_bytes = ((img_total_size < block_size) ? img_total_size; block_size);
+			int done_bytes = sendfile(fd, fdimg, NULL, send_bytes);//利用 sendfile() 將檔案內容分段傳送給客戶端，直到整個檔案都傳送完畢。
+			img_total_size = img_tot_size - done_bytes;
+		}
+		if(send_size >= 0)
+		{
+			std::cout << "send file: " << filePath.c_str();
+
+		}
+		close(fdimg);
+	}
+	
 }
 
 
@@ -62,13 +98,14 @@ void getData(std::string requestType, std::string client_message)
        }
        data.erase(0,counter + 1);
        int found = data.find("=");
-       if(found == string :: npos)
+       if(found == std::string::npos)
        {
             data = ""; // 如果沒有= 就不是post直接設成null
        }
     }
     //check cookies
     int found = client_message.find("Cookie:");
+
     if (found != std::string::npos)//found cookie
     {
         client_message.erase(0, found + 8); //delete everything before cookie and cookie this word

@@ -1,0 +1,35 @@
+HTTP/1.1 200 OK
+Date: Sun, 26 Sep 2021 10:00:00 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 138
+
+<html>
+<head>
+    <title>Example Page</title>
+</head>
+<body>
+    <h1>Hello, World!</h1>
+    <p>This is an example HTTP response with headers and content.</p>
+</body>
+</html>
+
+
+
+
+解釋：
+標頭部分（Header）：
+
+第一行：HTTP/1.1 200 OK
+表示 HTTP 協議版本及狀態碼（200 表示成功）。
+接下來每一行都是一個標頭字段，例如：
+Date: Sun, 26 Sep 2021 10:00:00 GMT：回應的日期和時間。
+Content-Type: text/html; charset=UTF-8：告訴瀏覽器這個回應的內容類型是 HTML，並且使用 UTF-8 編碼。
+Content-Length: 138：回應內容的長度（以位元組計-Byte）為單位。
+
+
+標頭部分之後有一個空白行，這個空行表示標頭結束，接下來的部分就是回應的內容（Body）。
+內容部分（Body）：
+
+空行之後是實際要傳送給瀏覽器的內容。這裡是一個簡單的 HTML 文件：
+<html> 到 </html> 包含整個 HTML 文件。
+瀏覽器根據這些 HTML 標籤來解析和呈現網頁。
