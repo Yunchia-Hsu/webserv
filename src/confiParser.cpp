@@ -22,7 +22,6 @@ void ConfiParser::parseFile(const std::string& filename)
     file.close();
     std::cout << "File is saved and dandy!" << std::endl;
     testPrinter();
-
 }
 
 void ConfiParser::testPrinter() const
