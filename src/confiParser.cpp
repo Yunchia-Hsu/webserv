@@ -13,9 +13,19 @@ void ConfiParser::parseFile(const std::string& filename)
     {
         throw std::runtime_error("Failed to open the file: " + filename);
     }
+
     std::string line;
     while (std::getline(file, line))
     {
+        // whitespace off
+        size_t start = line.find_first_not_of("\t");
+        if (start != std::string::npos)
+            line = line.substr(start);
+
+        //ignore # and empty lines
+
+        if (line.empty() || line[0] == '#' || line[0] == ';')
+            continue;
         //push_back every line to the vector
         confiLines.push_back(line);
     }

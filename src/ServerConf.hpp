@@ -20,8 +20,11 @@ class ServerConf
         size_t maxBody;
         std::string host;
         std::String serverName;
+		std::map<int, std::string> errorPagges; // for exmpl 404 -> "404 .html not connecting"
+		std::vector<std::string> routes;
 
-        std::map<int, std::string> errorError; // 404 -> "404 .html not connecting"
+		ServerConf();
+//		void printConfig() const;
 
 };
 

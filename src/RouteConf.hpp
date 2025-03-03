@@ -18,6 +18,20 @@ class RouteConf
     private:
 
     public:
+        std::string location; //for URL
+        std::string root;
+        std::set<std::string> methods // allowed methods:GET, POST, DELETE
+        std::string defaultFile;
+        std::string uploadDir;
+
+        bool directoryListings;
+        bool enableCGI;
+
+        std::strinf CGIPath;
+
+        RouteConf();
+//		void printConfig() const;
+
 };
 
 #endif
