@@ -20,30 +20,27 @@ void ConfiParser::parseFile(const std::string& filename)
     std::string line;
     while (std::getline(file, line))
     {
-        // whitespace off
+        /*
+			Ignore whitespace
+			Ignore notes etc.
+		*/
         size_t start = line.find_first_not_of("\t");
         if (start != std::string::npos)
             line = line.substr(start);
-
-        //ignore # and empty lines
-
         if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
 
 
-		if  (line.find("server { ") == 0)
+		if  (line.find("server") == 0) //		if  (line.find("server {") == 0)
 		{
 			ServerConf server;
 			parseServerStuff(file, server);
 			this->servers.push_back(server);
 		}
-        //push_back every line to the vector
-        //confiLines.push_back(line);
     }
     file.close();
 
-    std::cout << "File is saved and dandy!" << std::endl;
-    testPrinter();
+    testPrinter();	/// DEBUGPRINT
 }
 
 void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
@@ -67,6 +64,7 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 			route.CGIPath = line.substr(9);
 		}
 	}
+	route.printConfig(); // DEBUGPRINT
 }
 
 void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
@@ -97,14 +95,12 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			server.errorPages[errorCode] = errorFile;
 
 		}
-
 	}
+	server.printConfig(); // DEBUGPRINT
 }
 
 void ConfiParser::testPrinter() const
 {
-    for (size_t i = 0; i < confiLines.size(); i++)
-    {
-        std::cout << i + 1 << ": " << confiLines[i] << std::endl;
-    }
+	std::cout << "File is saved and dandy!" << std::endl;
+
 }
