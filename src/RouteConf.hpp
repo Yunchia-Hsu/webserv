@@ -13,6 +13,10 @@
 #ifndef ROUTECONF_HPP
 #define ROUTECONF_HPP
 
+#include <iostream>
+#include <string>
+#include <set>
+
 class RouteConf 
 {
     private:
@@ -20,17 +24,17 @@ class RouteConf
     public:
         std::string location; //for URL
         std::string root;
-        std::set<std::string> methods // allowed methods:GET, POST, DELETE
+        std::set<std::string> methods; // allowed methods:GET, POST, DELETE
         std::string defaultFile;
         std::string uploadDir;
 
         bool directoryListings;
         bool enableCGI;
 
-        std::strinf CGIPath;
+        std::string CGIPath;
 
         RouteConf();
-//		void printConfig() const;
+		void printConfig() const;
 
 };
 

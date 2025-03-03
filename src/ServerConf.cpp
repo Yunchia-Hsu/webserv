@@ -3,12 +3,10 @@
 
 ServerConf::ServerConf() : port(80), maxBody(1048576), host("localhost"), serverName("default") {}
 
-
-
 /*
     This is here for debugging
 */
-void serverName::printConfig()const
+void ServerConf::printConfig()const
 {
     std::cout <<  "Server Config: " << std::endl;
     std::cout << "Port: " << port << std::endl;

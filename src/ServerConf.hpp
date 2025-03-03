@@ -10,6 +10,12 @@
 #ifndef SERVERCONF_HPP
 #define SERVERCONF_HPP
 
+#include <iostream>
+#include <string>
+#include <map>
+#include <vector>
+
+
 class ServerConf 
 {
     private:
@@ -19,12 +25,12 @@ class ServerConf
         int port;
         size_t maxBody;
         std::string host;
-        std::String serverName;
-		std::map<int, std::string> errorPagges; // for exmpl 404 -> "404 .html not connecting"
+        std::string serverName;
+		std::map<int, std::string> errorPages; // for exmpl 404 -> "404 .html not connecting"
 		std::vector<std::string> routes;
 
 		ServerConf();
-//		void printConfig() const;
+		void printConfig() const;
 
 };
 

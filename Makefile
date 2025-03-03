@@ -4,7 +4,7 @@ CXX = c++
 FLAGS = -Wall -Wextra -Werror -std=c++11
 NAME = parparpar
 
-SRC = src/main.cpp src/confiParser.cpp
+SRC = src/main.cpp src/confiParser.cpp src/RouteConf.cpp src/ServerConf.cpp
 OBJ = $(SRC:.cpp=.o)
 
 all: $(NAME)
