@@ -8,6 +8,7 @@
 #include <vector>
 #include <fstream>
 #include <map>
+#include <sstream>
 
 #include "ServerConf.hpp"
 #include "RouteConf.hpp"

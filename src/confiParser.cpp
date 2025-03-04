@@ -55,8 +55,10 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		size_t start = line.find_first_not_of("\t");
 		if (start != std::string::npos)
 			line = line.substr(start);
-		if (line.empty() || line == "{")
+	
+		if (line.empty() || line == "{" || line[0] == '#')
 			continue ;
+	
 		if (line.find("}") == 0)
 			return ;
 		size_t spaces = line.find(" ");
@@ -80,9 +82,33 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		{
 			route.methods.insert(value);
 		}
+		/*
+		
+		FIGURE  THIS OUT !
+
+		*/
+		else if (keyWord == "allow_methods")
+		{
+			std::istringstream methodStream(value);
+			std::string method;
+			while (methodStream >> method)
+				route.methods.insert(method);
+		}
 		else if (keyWord == "cgi_path")
 		{
 			route.CGIPath = value;
+		}
+		else if (keyWord == "alias")
+		{
+			route.alias = value;
+		}
+		else if (keyWord == "index")
+		{
+			route.index = value;
+		}
+		else
+		{
+			std::cerr << "HOIKS! Unrecognized route key-> '" << keyWord << "'" << std::endl;
 		}
 	}
 	route.printConfig(); // DEBUGPRINT
@@ -100,8 +126,10 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		size_t start = line.find_first_not_of("\t");
 		if (start != std::string::npos)
 			line = line.substr(start);
-		if (line.empty() || line == "{")
+
+		if (line.empty() || line == "{" || line[0] === '#')
 			continue ;
+
 		if (line.find("}") == 0)
 			return ;
 		size_t spaces = line.find(" ");
@@ -145,14 +173,25 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			parseRouteStuff(file, route);
 			server.routes.push_back(route.location);
 		}
+		else if (keyWord == "gzip")
+		{
+			server.gzip  = value;
+		}
+		else if (keyWord == "client_max_body_size")
+		{
+			server.clienMaxBodySize= value;
+		}
 		else
 		{
+			std::cerr << "HOIKS! Unrecognized server key -> '" << keyWord << "'" << std::endl;
 			server.extraConfi[keyWord] = value;
 		}
 	}
 	server.printConfig(); // DEBUGPRINT
 }
 
+
+//DEBUG FUNCTION
 void ConfiParser::testPrinter() const
 {
 	std::cout << "File is saved and dandy!" << std::endl;

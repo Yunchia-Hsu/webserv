@@ -32,6 +32,9 @@ class RouteConf
         bool enableCGI;
 
         std::string CGIPath;
+        std::string alias;
+        std::string index;
+        std::string clientBodyBufferSize;
 
         RouteConf();
 		void printConfig() const;
