@@ -48,20 +48,41 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 	std::string line;
 	while (std::getline(file, line))
 	{
-		line = line.substr(line.find_first_not_of("\n"));
+		/*
+			EXEPTION CHECKS:
+				check if line is empty, handle brackets, trim whitespace, remove  semicolons
+		*/
+		size_t start = line.find_first_not_of("\t");
+		if (start != std::string::npos)
+			line = line.substr(start);
+		if (line.empty() || line == "{")
+			continue ;
 		if (line.find("}") == 0)
 			return ;
-		if (line.find("root") == 0)
+		size_t spaces = line.find(" ");
+		if (spaces == std::string::npos)
 		{
-			route.root = line.substr(5);
+			std::cerr<< "ERROR:: Invalid route configurations! '" << line << "'" << std::endl;
+			continue ;
 		}
-		else if (line.find("methods") == 0)
+
+		std::string keyWord = line.substr(0, spaces);
+		std::string value = line.substr(spaces + 1);
+
+		if (!value.empty() && value.back() == ';')
+			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen		
+
+		if (keyWord == "root")
 		{
-			route.methods.insert("GET");
+			route.root = value;
 		}
-		else if (line.find("cgi_path") == 0)
+		else if (keyWord == "methods")
 		{
-			route.CGIPath = line.substr(9);
+			route.methods.insert(value);
+		}
+		else if (keyWord == "cgi_path")
+		{
+			route.CGIPath = value;
 		}
 	}
 	route.printConfig(); // DEBUGPRINT
@@ -72,28 +93,61 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 	std::string line;
 	while (std::getline(file, line))
 	{
-		line = line.substr(line.find_first_not_of("\t"));
-		if (line.find("location") == 0)
+		/*
+			EXEPTION CHECKS:
+				check if line is empty, handle brackets, trim whitespace, remove  semicolons
+		*/
+		size_t start = line.find_first_not_of("\t");
+		if (start != std::string::npos)
+			line = line.substr(start);
+		if (line.empty() || line == "{")
+			continue ;
+		if (line.find("}") == 0)
+			return ;
+		size_t spaces = line.find(" ");
+		if (spaces == std::string::npos)
+		{
+			std::cerr<< "ERROR: Invalid route configurations! '" << line << "'" << std::endl;
+			continue ;
+		}
+
+		std::string keyWord = line.substr(0, spaces);
+		std::string value = line.substr(spaces + 1);
+
+		if (!value.empty() && value.back() == ';')
+			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen
+
+		if (keyWord  == "listen")
+		{
+			server.port = std::stoi(value);
+		}
+		else if (keyWord == "server_name")
+		{
+			server.serverName  = value;
+		}
+		else if (keyWord == "error_page")
+		{
+			size_t spPos = line.find(" ");
+			if  (spPos == std::string::npos)
+			{
+				std::cerr << "ERROR: Invalid error_page format '" << value << "'" << std::endl;
+				continue ;
+			}
+			int errorCode = std::stoi(value.substr(0, spPos));
+			std::string errorFile = value.substr(spPos + 1);
+			server.errorPages[errorCode] = errorFile;
+
+		}
+		else if (keyWord == "location")
 		{
 			RouteConf route;
+			route.location = value;;
 			parseRouteStuff(file, route);
 			server.routes.push_back(route.location);
 		}
-		else if (line.find("listen") == 0)
+		else
 		{
-			server.port = std::stoi(line.substr(7));
-		}
-		else if (line.find("server_name") == 0)
-		{
-			server.serverName  = line.substr(12);
-		}
-		else if (line.find("error_page") == 0)
-		{
-			size_t spPos = line.find(" ");
-			int errorCode = std::stoi(line.substr(11, spPos - 11));
-			std::string errorFile = line.substr(spPos + 1);
-			server.errorPages[errorCode] = errorFile;
-
+			server.extraConfi[keyWord] = value;
 		}
 	}
 	server.printConfig(); // DEBUGPRINT
