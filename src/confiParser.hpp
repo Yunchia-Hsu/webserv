@@ -20,6 +20,7 @@ class ConfiParser
         //store every line of the confifile
         std::vector<std::string> confiLines;
         std::vector<ServerConf> servers;
+        std::map<std::string, std::string> globalConfi;
 
     public:
         ConfiParser();

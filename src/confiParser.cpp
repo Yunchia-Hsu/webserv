@@ -31,11 +31,33 @@ void ConfiParser::parseFile(const std::string& filename)
             continue;
 
 
-		if  (line.find("server") == 0) //		if  (line.find("server {") == 0)
+		if  (line.find("server") == 0) //if  (line.find("server {") == 0)
 		{
+			std::getline(file, line);
 			ServerConf server;
 			parseServerStuff(file, server);
 			this->servers.push_back(server);
+		}
+		else if (line.find("http") == 0 || line.find("events") == 0)
+		{
+			std::getline(file, line);
+			continue ;
+		}
+		else
+		{
+			// store global  settinng outside of the {}
+			size_t emptyPos = line.find(" ");
+			if (emptyPos == std::string::npos)
+			{
+				std::cerr << "WARNING: Uknown (gotta catch them all!) global directive -> '" << line << "'" << std::endl;
+				continue ;
+			}
+			std::string key =line.substr(0, emptyPos);
+			std::string value = line.substr(emptyPos + 1);
+			if (!value.empty() && value.back() == ';')
+				value.pop_back();
+			globalConfi[key]  = value;
+
 		}
     }
     file.close();
@@ -46,6 +68,8 @@ void ConfiParser::parseFile(const std::string& filename)
 void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 {
 	std::string line;
+	int depth = 1;
+
 	while (std::getline(file, line))
 	{
 		/*
@@ -56,11 +80,23 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		if (start != std::string::npos)
 			line = line.substr(start);
 	
-		if (line.empty() || line == "{" || line[0] == '#')
+		if (line.empty() || line[0] == '#')
 			continue ;
+
+		if (line == "{")
+		{
+			depth++;
+			continue ;
+		}
+
+		if  (line.find("}") == 0)
+		{
+			depth--;
+			if(depth == 0)
+				return ;
+			continue ;
+		}
 	
-		if (line.find("}") == 0)
-			return ;
 		size_t spaces = line.find(" ");
 		if (spaces == std::string::npos)
 		{
@@ -127,7 +163,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		if (start != std::string::npos)
 			line = line.substr(start);
 
-		if (line.empty() || line == "{" || line[0] === '#')
+		if (line.empty() || line == "{" || line[0] == '#')
 			continue ;
 
 		if (line.find("}") == 0)
@@ -192,7 +228,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 
 
 //DEBUG FUNCTION
-void ConfiParser::testPrinter() const
+void ConfiParser::testPrinter() const 
 {
 	std::cout << "File is saved and dandy!" << std::endl;
 
