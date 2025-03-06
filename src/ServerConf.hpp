@@ -30,6 +30,8 @@ class ServerConf
 		std::vector<std::string> routes;
         std::string root;
         std::string index;
+        std::string sslCertificate;
+        std::string sslCertificateKey;
 
         std::string gzip;
         std::string clientMaxBodySize;

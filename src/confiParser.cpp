@@ -39,6 +39,12 @@ void ConfiParser::parseFile(const std::string& filename)
 			servers.push_back(server);
 			//this->servers.push_back(server);
 		}
+	}
+	file.close();
+	testPrinter();
+}
+
+		/*
 		else if (line.find("http") == 0 || line.find("events") == 0)
 		{
 			std::getline(file, line);
@@ -46,6 +52,8 @@ void ConfiParser::parseFile(const std::string& filename)
 		}
 		else
 		{
+			if (line == "}")
+				continue ;
 			// store global  settinng outside of the {}
 			size_t emptyPos = line.find(" ");
 			if (emptyPos == std::string::npos)
@@ -65,6 +73,7 @@ void ConfiParser::parseFile(const std::string& filename)
 
     testPrinter();	/// DEBUGPRINT
 }
+	*/
 
 void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 {
@@ -113,7 +122,14 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		{
 			server.index = value;
 		}
-
+		else if  (keyWord == "ssl_certificate")
+		{
+			server.sslCertificate =  value;
+		}
+		else if (keyWord == "ssl_certificate_key")
+		{
+			server.sslCertificateKey = value;
+		}
 		else if (keyWord == "error_page")
 		{
 			size_t spPos = line.find(" ");
@@ -130,7 +146,22 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		else if (keyWord == "location")
 		{
 			RouteConf route;
-			route.location = value;;
+			route.location = value;
+			/*
+				CHANGED!
+			*/
+			std::getline(file, line);
+			start = line.find_first_not_of("\t ");
+			if (start != std::string::npos)
+				line = line.substr(start);
+			if (line!= "{")
+			{
+				std::cerr << "ERROR: Missing '{' after location" << std::endl;
+				continue ;
+			}
+			/*
+				END OF CHANGE
+			*/
 			parseRouteStuff(file, route);
 			server.routes.push_back(route.location);
 		}
@@ -223,6 +254,37 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		{
 			route.index = value;
 		}
+		else if (keyWord == "try_files")
+		{
+			route.tryFiles = value;
+		}
+		else if (keyWord == "include")
+		{
+			route.includeFiles.push_back(value);
+		}
+		/*
+			ADDED THIS
+		*/
+		else if  (keyWord == "location")
+		{
+			RouteConf  nestedRoute;
+			nestedRoute.location = value;
+
+			std::getline(file, line);
+			start  = line.find_first_not_of("\t ");
+			if (start != std::string::npos)
+				line  = line.substr(start);
+			if (line != "{")
+			{
+				std::cerr << "You need '{' after location" << std::endl;
+				continue ;
+			}
+			parseRouteStuff(file, nestedRoute);
+			route.nestedRoutes.push_back(nestedRoute);
+		}
+		/*
+			END OFF ADD
+		*/
 		else
 		{
 			std::cerr << "HOIKS! Unrecognized route key-> '" << keyWord << "'" << std::endl;

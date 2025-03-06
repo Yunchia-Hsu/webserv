@@ -16,6 +16,7 @@
 #include <iostream>
 #include <string>
 #include <set>
+#include <vector>
 
 class RouteConf 
 {
@@ -27,6 +28,7 @@ class RouteConf
         std::set<std::string> methods; // allowed methods:GET, POST, DELETE
         std::string defaultFile;
         std::string uploadDir;
+        std::string tryFiles;
 
         bool directoryListings;
         bool enableCGI;
@@ -35,6 +37,8 @@ class RouteConf
         std::string alias;
         std::string index;
         std::string clientBodyBufferSize;
+        std::vector<std::string> includeFiles;
+        std::vector<RouteConf> nestedRoutes;
 
         RouteConf();
 		void printConfig() const;
