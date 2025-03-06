@@ -29,6 +29,9 @@ class ConfiParser
         void parseFile(const std::string& filename);
         void parseServerStuff(std::ifstream& file, ServerConf& server);
         void parseRouteStuff(std::ifstream& file, RouteConf& route);
+        
+        //getter for servers!
+        std::vector<ServerConf>& getServers() { return servers; }
 
 
         void testPrinter() const;

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include "confiParser.hpp"
+#include "WebServed.hpp"
 
 
 int main(int arc, char** arv)
@@ -16,6 +17,14 @@ int main(int arc, char** arv)
     {
         ConfiParser parser;
         parser.parseFile(arv[1]);
+
+        /*
+            Try WebServed
+        */
+        WebServed server(parser.getServers());
+        server.start();
+
+
     }
     catch (const std::exception &e)
     {
