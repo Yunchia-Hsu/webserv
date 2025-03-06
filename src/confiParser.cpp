@@ -106,6 +106,11 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		if (!value.empty() && value.back() == ';')
 			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen
 
+		
+		/*
+			"SIMPLE" KEY WORDS
+		*/
+
 		if (keyWord  == "listen")
 		{
 			server.port = std::stoi(value);
@@ -130,6 +135,19 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		{
 			server.sslCertificateKey = value;
 		}
+		else if (keyWord == "gzip")
+		{
+			server.gzip  = value;
+		}
+		else if (keyWord == "client_max_body_size")
+		{
+			server.clientMaxBodySize = value;
+		}
+
+		/* 
+			Complex Key Words
+		*/
+
 		else if (keyWord == "error_page")
 		{
 			size_t spPos = line.find(" ");
@@ -143,6 +161,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			server.errorPages[errorCode] = errorFile;
 
 		}
+
 		else if (keyWord == "location")
 		{
 			RouteConf route;
@@ -165,14 +184,15 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			parseRouteStuff(file, route);
 			server.routes.push_back(route.location);
 		}
-		else if (keyWord == "gzip")
+
+		else if (keyWord == "methods" || keyWord == "allow_methods")
 		{
-			server.gzip  = value;
+			std::istringstream methodStream(value);
+			std::string method;
+			while (methodStream >> method)
+				server.methods.insert(method);
 		}
-		else if (keyWord == "client_max_body_size")
-		{
-			server.clientMaxBodySize = value;
-		}
+
 		else
 		{
 			std::cerr << "HOIKS! Unrecognized server key -> '" << keyWord << "'" << std::endl;
@@ -227,28 +247,18 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		if (!value.empty() && value.back() == ';')
 			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen		
 
+
+		/*
+			Simple  Key Words
+		*/
+
 		if (keyWord == "root")
 		{
 			route.root = value;
 		}
-		else if (keyWord == "methods" || keyWord == "allow_methods")
-		{
-			std::istringstream methodStream(value);
-			std::string method;
-			while (methodStream >> method)
-				route.methods.insert(method);
-		}
 		else if (keyWord == "cgi_path")
 		{
 			route.CGIPath = value;
-		}
-		else if (keyWord == "alias")
-		{
-			if (value.empty())
-			{
-				continue ;
-			}
-			route.alias = value;
 		}
 		else if (keyWord == "index")
 		{
@@ -262,8 +272,26 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		{
 			route.includeFiles.push_back(value);
 		}
+
+		else if (keyWord == "alias")
+		{
+			if (value.empty())
+			{
+				continue ;
+			}
+			route.alias = value;
+		}
+
+		else if (keyWord == "methods" || keyWord == "allow_methods")
+		{
+			std::istringstream methodStream(value);
+			std::string method;
+			while (methodStream >> method)
+				route.methods.insert(method);
+		}
+
 		/*
-			ADDED THIS
+			Nested locations! --> It will create loop untill all is set!
 		*/
 		else if  (keyWord == "location")
 		{
@@ -282,9 +310,7 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 			parseRouteStuff(file, nestedRoute);
 			route.nestedRoutes.push_back(nestedRoute);
 		}
-		/*
-			END OFF ADD
-		*/
+		
 		else
 		{
 			std::cerr << "HOIKS! Unrecognized route key-> '" << keyWord << "'" << std::endl;

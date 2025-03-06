@@ -14,6 +14,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <set>
 
 
 class ServerConf 
@@ -38,6 +39,7 @@ class ServerConf
 
         // additional  settings
         std::map<std::string, std::string> extraConfi;
+        std::set<std::string> methods;
 
 		ServerConf();
 		void printConfig() const;
