@@ -28,9 +28,11 @@ class ServerConf
         std::string serverName;
 		std::map<int, std::string> errorPages; // for exmpl 404 -> "404 .html not connecting"
 		std::vector<std::string> routes;
+        std::string root;
+        std::string index;
 
         std::string gzip;
-        std::string clienMaxBodySize;
+        std::string clientMaxBodySize;
 
         // additional  settings
         std::map<std::string, std::string> extraConfi;

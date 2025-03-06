@@ -6,15 +6,20 @@ ServerConf::ServerConf() : port(80), maxBody(1048576), host("localhost"), server
 /*
     This is here for debugging
 */
-void ServerConf::printConfig()const
+
+void ServerConf::printConfig() const
 {
-    std::cout <<  "Server Config: " << std::endl;
+    std::cout << "Server Configuration:" << std::endl;
     std::cout << "Port: " << port << std::endl;
-    std::cout << "Max Body Size: " << maxBody << " bytes" << std::endl;
-    std::cout << "Host: " << host << std::endl;
     std::cout << "Server Name: " << serverName << std::endl;
 
-    std::cout << "Error Pages: " << std::endl;
+    if (!root.empty())
+        std::cout << "Root Directory: " << root << std::endl;
+
+    if (!index.empty())
+        std::cout << "Index Files: " << index << std::endl;
+
+    std::cout << "Error Pages:" << std::endl;
     for (const auto& entry : errorPages)
         std::cout << "  " << entry.first << " -> " << entry.second << std::endl;
 
@@ -26,3 +31,4 @@ void ServerConf::printConfig()const
     for (const auto& entry : extraConfi)
         std::cout << "  " << entry.first << " = " << entry.second << std::endl;
 }
+
