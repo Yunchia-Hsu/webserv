@@ -113,7 +113,9 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 
 		if (keyWord  == "listen")
 		{
-			server.port = std::stoi(value);
+			std::cout  << "Raw listen value: " << value << std::endl; //testestestest
+			server.port = std::stoi(value.substr(value.find(":") + 1));
+			std::cout << "✅ Parsed port: " << server.port << std::endl;
 		}
 		else if (keyWord == "server_name")
 		{
