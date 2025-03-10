@@ -17,6 +17,8 @@ void ConfiParser::parseFile(const std::string& filename)
         throw std::runtime_error("Failed to open the file: " + filename);
     }
 
+	std::set<std::pair<std::string, int>> usedPorts;
+
     std::string line;
     while (std::getline(file, line))
     {
@@ -36,8 +38,15 @@ void ConfiParser::parseFile(const std::string& filename)
 			std::getline(file, line);
 			ServerConf server;
 			parseServerStuff(file, server);
+		
+			std::pair<std::string, int> hostPort = {server.host, server.port};
+			if (usedPorts.find(hostPort) != usedPorts.end()) 
+			{
+    			std::cerr << "⚠️ WARNING: You're trying to use the same port multiple times! " << std::endl;
+			}
+			usedPorts.insert(hostPort);
+
 			servers.push_back(server);
-			//this->servers.push_back(server);
 		}
 	}
 	file.close();
@@ -117,7 +126,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			server.port = std::stoi(value.substr(value.find(":") + 1));
 			std::cout << "✅ Parsed port: " << server.port << std::endl;
 		}
-		else if (keyWord == "server_name")
+		else if (keyWord == "server_name") // we should handle multiple
 		{
 			server.serverName  = value;
 		}
@@ -143,7 +152,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		}
 		else if (keyWord == "client_max_body_size")
 		{
-			server.clientMaxBodySize = value;
+			server.clientMaxBodySize = value; // this not right!
 		}
 
 		/* 
@@ -163,7 +172,6 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			server.errorPages[errorCode] = errorFile;
 
 		}
-
 		else if (keyWord == "location")
 		{
 			RouteConf route;
@@ -201,6 +209,23 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			server.extraConfi[keyWord] = value;
 		}
 	}
+	
+	/*
+	
+		Add default values if needed
+	
+	*/
+	if (server.errorPages.empty())
+	{
+		server.errorPages[404] = "/default_404.html";
+		server.errorPages[500] = "/default_500.html";
+	}
+	if (server.clientMaxBodySize.empty())
+	{
+		server.clientMaxBodySize = "1M";
+	}
+	
+
 	server.printConfig(); // DEBUGPRINT
 }
 
@@ -273,6 +298,14 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		else if (keyWord == "include")
 		{
 			route.includeFiles.push_back(value);
+		}
+		else if (keyWord == "return" || keyWord == "redirect")
+		{
+			route.redirect = value;
+		}
+		else if (keyWord == "autoindex")
+		{
+			route.autoindex = (value == "on");
 		}
 
 		else if (keyWord == "alias")

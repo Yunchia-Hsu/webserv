@@ -29,6 +29,8 @@ class RouteConf
         std::string defaultFile;
         std::string uploadDir;
         std::string tryFiles;
+        std::string redirect;
+        std::string autoindex;
 
         bool directoryListings;
         bool enableCGI;
