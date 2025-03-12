@@ -53,6 +53,7 @@ void ConfiParser::parseFile(const std::string& filename)
 	testPrinter();
 }
 
+//This function will parser the max-client_body_size from str to size_t
 size_t parseBody(const std::string& value)
 {
 	size_t multip = 1;
@@ -126,9 +127,14 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 		std::cout << "✅ Parsed port: " << server.port << std::endl; // DEBUG
 
 	}
-	else if (keyWord == "server_name") // we should handle multiple
+	else if (keyWord == "server_name")
 	{
-		server.serverName  = value;
+		std::istringstream iss(value);
+		std::string name;
+		while (iss >> name)
+		{
+			server.serverNames.push_back(name);
+		}
 	}
 	else if (keyWord == "root")
 	{

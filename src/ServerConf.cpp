@@ -1,7 +1,7 @@
 #include "ServerConf.hpp"
 #include <iostream>
 
-ServerConf::ServerConf() : port(80), maxBody(1048576), host("localhost"), serverName("default") {}
+ServerConf::ServerConf() : port(80), maxBody(1048576), host("localhost"), serverNames({"default"}) {}
 
 /*
     This is here for debugging
@@ -11,7 +11,7 @@ void ServerConf::printConfig() const
 {
     std::cout << "Server Configuration:" << std::endl;
     std::cout << "Port: " << port << std::endl;
-    std::cout << "Server Name: " << serverName << std::endl;
+    //std::cout << "Server Name: " << serverNames << std::endl;
 
     if (!root.empty())
         std::cout << "Root Directory: " << root << std::endl;
