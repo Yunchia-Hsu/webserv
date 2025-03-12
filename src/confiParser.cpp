@@ -57,9 +57,23 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 {
 	if (keyWord  == "listen")
 	{
-		std::cout  << "Raw listen value: " << value << std::endl; //testestestest
-		server.port = std::stoi(value.substr(value.find(":") + 1));
-		std::cout << "✅ Parsed port: " << server.port << std::endl;
+	
+		std::cout  << "Raw listen value: " << value << std::endl; // DEGUB
+
+		size_t doubleDot = value.find(":");
+		if (doubleDot != std::string::npos)
+		{
+			server.host = value.substr(0, doubleDot);
+			server.port = std::stoi(value.substr(doubleDot + 1));
+		}
+		else
+		{
+			server.host = "0.0.0.0"; // set to default
+			server.port = std::stoi(value);
+		}
+		
+		std::cout << "✅ Parsed port: " << server.port << std::endl; // DEBUG
+
 	}
 	else if (keyWord == "server_name") // we should handle multiple
 	{
@@ -197,7 +211,6 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 
 	server.printConfig(); // DEBUGPRINT
 }
-
 
 void ConfiParser::routeKeys(const std::string& keyWord, const std::string& value, RouteConf& route)
 {
