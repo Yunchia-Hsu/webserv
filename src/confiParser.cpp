@@ -53,6 +53,57 @@ void ConfiParser::parseFile(const std::string& filename)
 	testPrinter();
 }
 
+size_t parseBody(const std::string& value)
+{
+	size_t multip = 1;
+	std::string n = value;
+
+	if (value.empty())
+	{
+		std::cerr << "⚠️ Warning! Wrong max_body set, default(1M) used instead" << std::endl;
+		return 1048576; // 1M as bytes
+	}
+
+	//converter
+	char sizeC = value.back();
+
+	if (sizeC == 'K' || sizeC == 'k')
+	{
+        multip = 1024; // Convert KB to bytes
+        n.pop_back();		
+	}
+	else if (sizeC == 'M' || sizeC == 'M')
+	{
+        multip = 1024 * 1024; // Convert MB to bytes
+        n.pop_back();
+	}
+	else if (sizeC == 'G' || sizeC == 'g')
+	{
+        multip = 1024 * 1024 * 1024; // Convert GB to bytes
+        n.pop_back();
+	}
+	else
+	{
+		std::cerr << "⚠️ Warning! I need a unit for my  Body, assuming (M)" << std::endl;
+		multip = 1024 * 1024; // Convert MB to bytes
+	}
+	try
+	{
+		size_t size = std::stoul(n) * multip;
+		if (size > 1048576 || size < 0)
+		{
+			std::cerr << "⚠️ Warning! Max body is 1M, so it was set as 1M" << std::endl;
+			return 1048576;
+		}
+		return size;
+	}
+	catch (...)
+	{
+		std::cerr << "Error error, inalid BodySize, setting the size as 1M" << std::endl;
+		return 1048576;
+	}
+}
+
 void ConfiParser::serverKeys(const std::string& keyWord, const std::string& value, ServerConf& server)
 {
 	if (keyWord  == "listen")
@@ -102,6 +153,7 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 	else if (keyWord == "client_max_body_size")
 	{
 		server.clientMaxBodySize = value; // this not right!
+		server.clientMaxBodySize = parseBody(value);
 	}
 	else if (keyWord == "error_page" || keyWord == "location" || keyWord == "methods" || keyWord == "allow_methods")
 	{
