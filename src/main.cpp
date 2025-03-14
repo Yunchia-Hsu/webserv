@@ -23,6 +23,7 @@ int main(int arc, char** arv)
         */
         WebServed server(parser.getServers());
         server.start();
+        server.cleanup();
 
 
     }
