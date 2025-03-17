@@ -8,6 +8,7 @@
 #include <sys/select.h> // select()
 #include <unistd.h> //close()
 #include <chrono>
+#include <sys/socket.h>
 
 enum ConnectionState
 {
@@ -28,7 +29,7 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> lastActive;
 
 
-    connectionstate state;
+    ConnectionState state;
 
 public:
   
@@ -52,7 +53,7 @@ public:
     ClientConnection(int cfd): fd(cfd), writeOffset(0)
     {
         //for test
-        writeBuffer = "Hello from server!\n";
+        writeBuffer = "Hello from server!   for test\n";
     }
 
     int readData() //要進一步確保HTTP request 是完整的
@@ -65,16 +66,16 @@ public:
         {
            
             writeBuffer.append(buffer, n);
-            std::cout << "client: "<< fd << " recieved "<< n <<bytes << std::endl;
+            std::cout << "client: "<< fd << " recieved "<< n <<" bytes" << std::endl;
             // parse http request
-            lastActive = std::chrono::steady_clock::now();
+           // lastActive = std::chrono::steady_clock::now();
         }
         return n;
     }
 
     void appendToWriteBuffer(const std::string &data)
     {
-        writeBuffer = += data;
+        writeBuffer  += data;
     }
 
     int writeData()
@@ -82,24 +83,24 @@ public:
         if (!needWrite())
             return 0;
         // count data length
-        size_t remaining = writeBuffer.size() - writeOfsset;
+        size_t remaining = writeBuffer.size() - writeOffset;
         ssize_t totalSent = 0;
 
         while(remaining >0)
         {
              //call send     writeBuffer.data() 是response
-            ssize_t sent = send (fd, writeBuffer.data() + writeOffset, remaining, 0 );
+            ssize_t sent = send(fd, writeBuffer.data() + writeOffset, remaining, 0 );
             if (sent > 0)
             {
                 writeOffset += sent;
                 totalSent += sent;
                 remaining -= sent;
-                std::cout << "client: " << fd<< " wrote " << n << " bytes." <<std::endl; 
-                lastActive = std::chrono::steady_clock::now();
+                std::cout << "client: " << fd<< " sent " << sent << " bytes." <<std::endl; 
+                //lastActive = std::chrono::steady_clock::now();
             }
             else if (sent < 0)
             {
-                std::error << "send failed" << std::endl;
+                std::perror("send() failed");
                 return -1;
             }
             else//fd may close
@@ -107,7 +108,7 @@ public:
 
         }
   
-        return static_cast<int> totalSent;
+        return static_cast<int> (totalSent);
     }
 
 
@@ -116,6 +117,14 @@ public:
     {
         return lastActive;
     }
+
+	void clean()
+	{
+		if (fd > 0)
+			::close(fd);
+		
+		fd = -1;  //in case reclose the fd
+	}
 };
 
 

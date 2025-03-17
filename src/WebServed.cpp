@@ -31,7 +31,7 @@ void	*ft_memcpy(void *dst, const void *src, size_t n)
 //建立 Socket 與 Bind + Listen
 void WebServed::start()//將不同port存入不同的vector
 {
-	std::vector<int> serverSockets;
+	// std::vector<int> serverSockets;
 
 
 	for (size_t i = 0; i < servers.size(); i++)
@@ -39,7 +39,7 @@ void WebServed::start()//將不同port存入不同的vector
 		
 		int serverPort = servers[i].port;
 
-		//int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+		
 		int serverFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
 		if (serverFd == -1)
@@ -60,14 +60,14 @@ void WebServed::start()//將不同port存入不同的vector
 
 		struct sockaddr_in server_addr;
 		std::memset(&server_addr, 0, sizeof(server_addr));
-		server
+		
 		server_addr.sin_family = AF_INET;//ipv4
-		server_add.in_addr.s_addr = INADDR_ANY;//all web address
+		server_addr.sin_addr.s_addr = INADDR_ANY;//all web address
 		server_addr.sin_port = htons(serverPort);
 
 		if (bind(serverFd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0)
 		{
-			std::cerr << "❌ Error: failed to bind port " << serverPort << std::endl;
+			std::cerr << "fd:" << serverFd <<  "❌ Error: failed to bind port " << serverPort << std::endl;
 			close(serverFd);
 			continue ;
 		}
@@ -87,192 +87,247 @@ void WebServed::start()//將不同port存入不同的vector
 			std::cerr << "❌ Error: no server sockets created" << std::endl;
 			return ;
 		}
-		else
-		{
-			runEventloop(serverSockets);
-		}
+		
 		
 	}
 
+}
 
-	void WebServed::runEventloop(std::vector<int> &serverSockets)
+
+// void WebServed::runEventloop(std::vector<int> &serverSockets)
+void WebServed::runEventloop()
+{
+	// save client info in a map
+	//std::map<int, ClientConnection> clients;
+	std::cout << "Eventloop 🚀" << std::endl;
+	while(true)
 	{
-		// save client info in a map
-		//std::map<int, ClientConnection> clients;
-		while(true)
+		//1.建立並清空 readSet, writeSet。
+		fd_set readSet, writeSet;
+		FD_ZERO(&readSet);
+		FD_ZERO(&writeSet);
+		int maxfd = 0;
+
+		struct timeval timeout;
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0;
+		int ret = 0;
+
+		//2.將「所有 server socket」加入 readSet，以便檢查是否有新連線要 accept()。
+		for (size_t i = 0; i < serverSockets.size(); i++)
 		{
-			//1.建立並清空 readSet, writeSet。
-			fd_set readSet, writeSet;
-			FD_ZERO(&readSet);
-			FD_ZERO(&writeSet);
-			int maxfd = 0;
-
-			struct timeval timeout;
-			timeout.tv_sec = 1;
-			timeout.tv_usec = 0;
-			int ret = 0;
-
-			//2.將「所有 server socket」加入 readSet，以便檢查是否有新連線要 accept()。
-			for (size_t i = 0; i < serverSockets.size(); i++)
-			{
-				int serverfd = serverSockets[i];
-				FD_SET(serverfd, &readSet);
-				if (serverfd > maxfd)
-					maxfd = serverfd;
-			}
-			
-			//3.將「所有已連線的 client socket」根據需要讀/寫的狀況加入 readSet / writeSet。
-			
-			
-			for (std::map<int, ClientConnection>::iterator it= clients.begin(); it!= clients.end(); it++)
-			{
-				int clientfd = it->first;
-				ClientConnection &conn = it->second;
-				if (conn.needRead()== true)
-				{
-					FD_SET(clientfd, &readSet);
-					if (clientfd > maxfd)
-						maxfd = clientfd;
-				}
-				if (conn.neeWrite() == true)
-				{
-					FD_SET(clientfd, &writeSet);
-					if (clientfd > maxfd)
-						maxfd = clientfd;
-				}
-			}
-			
-
-			//4.呼叫 select()，等待有任何 fd 就緒。
-			int readycount = select(maxfd + 1, &readSet, &wrteSet, NULL, &timeout);
-			
-			if (readycount < 0)
-			{
-				std::"Error: select()" << std::endl;
-				//close fd
-				for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
-				{
-					close(it->first);
-				}
-				clients.clear();
-				break;//?
-			}
-			else if (readycount == 0)
-			{
-				//timeout
-				continue;
-			}
-			//5.處理新連線 (accept)、
-			for (int i = 0; i < serverSockets.size(); i++)
-			{
-				int sfd = serverSockets[i];
-				if (FD_ISSET(sfd, &readSet))
-				{
-					while(true)//there might be multiple new connections in non-blocking mode at a port
-					{
-						struct sockaddr_in clientAddr;
-						socklen_t addrLen = sizeof(clientAddr);
-						int clientFd = accept(sfd, (sockaddr*)&clientAddr, &addrLen);
-						if (clientFd < 0)
-						{
-							std::cerr << "❌ Error: failed to accept new connection" << std::endl;
-							break;
-						}
-						else
-						{
-							std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
-							//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
-							clients.insert(std::makepair(clientFd, ClientConnection(clientFd)));
-						}
-					}	
-				}
-			}
-
-			//檢查所有現有 client FD，是否可讀
-			for (std::map<int, ClientConnection>::iterator it = clients->begin; it != clients.end(); it++)
-			{
-				int cfd = it->first;
-				ClinetConnection &conn = it->second;//?
-				bool cosed = false;
-
-				//if can read
-				if (FD_ISSET(cfd, &readSet))
-				{
-					int n = conn.readData();
-					if (n <= 0)
-					{
-						std::cout << "Client: " << cfd << " disconnected.\n";
-						close(cfd);
-						std::map<int, ClientConnection>::iterator tmp = it;
-						++it;
-						clients.erase(tmp);
-						//may need to FD_CLR(cfd, &readSet);
-						closed = true;
-					}
-				}
+			int serverfd = serverSockets[i];
+			//std::cout << "serverfd: " << serverfd << std::endl;
+			FD_SET(serverfd, &readSet);
+			if (serverfd > maxfd)
+				maxfd = serverfd;
+		}
+		std::cout << "Eventloop 1" << std::endl;
+		
+		//3.將「所有已連線的 client socket」根據需要讀/寫的狀況加入 readSet / writeSet。
+		
+		for (std::map<int, ClientConnection>::iterator it= clients.begin(); it!= clients.end(); ++it)
+		{
+			std::cout << "Eventloop 2" << std::endl;
+			int clientfd = it->first;
+			ClientConnection &conn = it->second;
+			if (conn.needRead()== true)
+				FD_SET(clientfd, &readSet);
 				
-
-				//6.若有 client 可寫，就 send()。
-				if (!closed && FD_ISSET(cfd, &writeSet) )
-				{
-					int sent = conn.writeData();
-					if (sent < 0 || sent == 0)
-					{
-						if (sent < 0)
-							std::cerr << "❌ Error: failed to send data to client " << cfd << std::endl;
-						else
-							std::cout << "❌ Client " << cfd << " disconnected." << std::endl;
-						close(cfd);
-						std::map<int, ClientConnection>::iterator tmp = it;
-						clients.erase(tmp);
-						closed = true;
-					}
-				}
-
-				if (closed == false)
-				{
-					++it;
-				}
-			}
+			if (conn.needWrite() == true)
+				FD_SET(clientfd, &writeSet);
+				
+			if (clientfd > maxfd)
+					maxfd = clientfd;
+		}
 		
-			//timeout control
-			auto now = std::chrono::steady_clock::now();//?
-			const int TIMEOUT_SECONDS = 60;
-			for (auto it = client.begin(); it != clients.end();) 
+		///test///
+		std::cout << "&& connected clients: ";
+		for (auto it = clients.begin(); it != clients.end(); ++it) {
+			std::cout << it->first << " ";
+		}
+		std::cout << std::endl;
+		if (clients.empty())
+		{
+			std::cerr << "❌ Error: clients empty" << std::endl;
+		}
+
+
+
+
+		//4.呼叫 select()，等待有任何 fd 就緒。
+		// for (size_t i = 0; i < serverSockets.size(); ++i) {
+		// 		std::cout << "🔍 server socket fd: " << serverSockets[i] << std::endl;
+		// 	}
+		
+		//int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
+		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, NULL);
+		std::cout << "readycount: " << readycount << std::endl;
+		if (readycount < 0)
+		{
+			std::cerr<< "Error: select()" << std::endl;
+			//close fd
+			std::cout << "Eventloop 3.1" << std::endl;
+			for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
-				int cfd = it->first;
-				ClientConnection &conn = it->second;
-
-				auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActive()).count();
-				if (if elapsed > TIMEOUT_SECONDS)
+				close(it->first);
+			}
+			clients.clear();
+			break;//?
+		}
+		else if (readycount == 0)
+		{
+			std::cout << "Eventloop 3.2" << std::endl;
+			//timeout
+			continue;
+		}
+		//5.處理新連線 (accept)、
+		for (int i = 0; i < serverSockets.size(); i++)
+		{
+			std::cout << "Eventloop 3.5" << std::endl;
+			int sfd = serverSockets[i];
+			if (FD_ISSET(sfd, &readSet))
+			{
+				while(true)//there might be multiple new connections in non-blocking mode at a port
 				{
-					std::cout<< "Client: " << cfd << " timeout." << std::endl;
-					close (cfd);
+					std::cout << "Eventloop 4" << std::endl;
+					struct sockaddr_in clientAddr;
+					socklen_t addrLen = sizeof(clientAddr);
+					int clientFd = accept(sfd, (sockaddr*)&clientAddr, &addrLen);
+					std::cout << "Clients count after accept(): " << clients.size() << std::endl;
+
+					if (clientFd < 0)
+					{
+						
+						
+						std::cerr << "❌ Error: failed to accept new connection" << std::endl;
+						break;
+					}
+					else
+					{
+						std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
+
+						ClientConnection conn (clientFd);
+						conn.appendToWriteBuffer("Hello from server!  here there (Test Message)\n");
+						//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
+						clients.insert(std::make_pair(clientFd, ClientConnection(clientFd)));
+						///test///
+						std::cout << "Current connected clients: ";
+						for (auto it = clients.begin(); it != clients.end(); ++it) {
+							std::cout << it->first << " ";
+						}
+						std::cout << std::endl;
+					}
+				}	
+			}
+		}
+
+		//檢查所有現有 client FD，是否可讀
+		for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
+		{
+			//std::cout << "Eventloop 5" << std::endl;
+			int cfd = it->first;
+			ClientConnection &conn = it->second;//?
+			bool closed = false;
+
+			//if can read
+			if (FD_ISSET(cfd, &readSet))
+			{
+				int n = conn.readData();
+				if (n <= 0)
+				{
+					std::cout << "Client: " << cfd << " disconnected. \n";
+					close(cfd);
 					std::map<int, ClientConnection>::iterator tmp = it;
-					it++;
-					client.erase(tmp);
-
-				}
-				else
-				{
 					++it;
+					clients.erase(tmp);
+					//may need to FD_CLR(cfd, &readSet);
+					closed = true;
 				}
 			}
 			
 
+			//6.若有 client 可寫，就 send()。
+			if (!closed && FD_ISSET(cfd, &writeSet) )
+			{
+				//std::cout << "Eventloop 6" << std::endl;
+				int sent = conn.writeData();
+				if (sent < 0 || sent == 0)
+				{
+					if (sent < 0)
+						std::cerr << "❌ Error: failed to send data to client " << cfd << std::endl;
+					else
+						std::cout << "❌ Client " << cfd << " disconnected." << std::endl;
+					close(cfd);
+					std::map<int, ClientConnection>::iterator tmp = it;
+					clients.erase(tmp);
+					++it;
+					closed = true;
+				}
+			}
 
-		
-		
+			// if (closed == false)
+			// {
+			// 	++it;
+			// }
+		}
+	
+		/*
+		//timeout control
+		auto now = std::chrono::steady_clock::now();//?
+		std::cout << "timeout " << std::endl;
+		const int TIMEOUT_SECONDS = 60;
+		for (auto it = clients.begin(); it != clients.end();) 
+		{
+			int cfd = it->first;
+			ClientConnection &conn = it->second;
+
+			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActivity()).count();
+			if ( elapsed > TIMEOUT_SECONDS)
+			{
+				std::cout<< "Client: " << cfd << " timeout." << std::endl;
+				close (cfd);
+				std::map<int, ClientConnection>::iterator tmp = it;
+				it++;
+				clients.erase(tmp);
+
+			}
+			else
+			{
+				++it;
+			}
 		}
 		
-		
+
+		*/
+	
+	
 	}
+	std::cout << "Eventloop end" << std::endl;
+	
+}
 
 
-	WebServed::cleanup()
+
+
+void WebServed::cleanup(void)
+{
+	std::cout << "call cleanup " << std::endl;
+	//close server sockets
+	for (size_t i = 1; i < serverSockets.size() ; ++i)
 	{
-		for (std::)
+		::close(serverSockets[i]);
+
 	}
+	//close client sockets
+	for (auto it = clients.begin(); it != clients.end(); it ++)
+	{
+		::close(it->first);
+	}
+	//clean container
+	clients.clear();
+	serverSockets.clear();
+}
 	/*
 	client
 	*/
@@ -316,7 +371,7 @@ void WebServed::start()//將不同port存入不同的vector
 	// 	}
 	// }
 
-}
+
 
 //2.進入事件迴圈
 //select() → 檢查哪些 fd 可讀/可寫。
