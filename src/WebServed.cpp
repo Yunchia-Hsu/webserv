@@ -95,125 +95,174 @@ void WebServed::start()//將不同port存入不同的vector
 	}
 
 
-	void WebServed::runEventloop(int serverSockets)
+	void WebServed::runEventloop(std::vector<int> &serverSockets)
 	{
 		// save client info in a map
 		//std::map<int, ClientConnection> clients;
 		while(true)
 		{
-		//1.建立並清空 readSet, writeSet。
-		fd_set readSet, writeSet;
-		FD_ZERO(&readSet);
-		FD_ZERO(&writeSet);
-		int maxfd = 0;
+			//1.建立並清空 readSet, writeSet。
+			fd_set readSet, writeSet;
+			FD_ZERO(&readSet);
+			FD_ZERO(&writeSet);
+			int maxfd = 0;
 
-		struct timeval timeout;
-		timeout.tv_sec = 1;
-		timeout.tv_usec = 0;
-		int ret = 0;
+			struct timeval timeout;
+			timeout.tv_sec = 1;
+			timeout.tv_usec = 0;
+			int ret = 0;
 
-		//2.將「所有 server socket」加入 readSet，以便檢查是否有新連線要 accept()。
-		for (size_t i = 0; i < serverSockets.size(); i++)
-		{
-			int serverfd = serverSockets[i];
-			FD_SET(serverfd, &readSet);
-			if (serverfd > maxfd)
-				maxfd = serverfd;
-		}
-		
-		//3.將「所有已連線的 client socket」根據需要讀/寫的狀況加入 readSet / writeSet。
-		
-		
-		for (std::map<int, ClientConnection>::iterator it= clients.begin(); it!= clients.end(); it++)
-		{
-			int clientfd = it->fisrt;
-			ClientConnection &conn = it->second;
-			if (conn.needRead()== true)
+			//2.將「所有 server socket」加入 readSet，以便檢查是否有新連線要 accept()。
+			for (size_t i = 0; i < serverSockets.size(); i++)
 			{
-				FD_SET(clientfd, &readSet);
-				if (clientfd > maxfd)
-					maxfd = clientfd;
+				int serverfd = serverSockets[i];
+				FD_SET(serverfd, &readSet);
+				if (serverfd > maxfd)
+					maxfd = serverfd;
 			}
-			if (conn.needwrite() == true)
+			
+			//3.將「所有已連線的 client socket」根據需要讀/寫的狀況加入 readSet / writeSet。
+			
+			
+			for (std::map<int, ClientConnection>::iterator it= clients.begin(); it!= clients.end(); it++)
 			{
-				FD_SET(clientfd, &writeSet);
-				if (clientfd > maxfd)
-					maxfd = clientfd;
-			}
-		}
-		
-
-		//4.呼叫 select()，等待有任何 fd 就緒。
-		int readycount = select(maxfd + 1, &readSet, &wrteSet, NULL, &timeout);
-		
-		if (readycount < 0)
-		{
-			std::"failed to select()" << std::endl;
-			//close fd
-			for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
-			{
-				close(it->first);
-				clients.clear();
-				
-			}
-		}
-		//5.處理新連線 (accept)、
-		for (int i = 0; i < serverSockets.size(); i++)
-		{
-			int sfd = serverSockets[i];
-			if (FD_ISSET(sfd, &readSet))
-			{
-				while(true)//there might be multiple new connections in non-blocking mode at a port
+				int clientfd = it->first;
+				ClientConnection &conn = it->second;
+				if (conn.needRead()== true)
 				{
-					struct addr_in clientAddr;
-					socklen_t addrLen = sizeof(clientAddr);
-					int clientFd = accept(sfd, (sockaddr*)&clientAddr, &clientLen);
-					if (clientFd < 0)
-					{
-						std::cerr << "❌ Error: failed to accept new connection" << std::endl;
-						readSet.erase(sfd);
-						break;
-					}
-					else
-					{
-						std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
-						//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
-						clients.insert(std::makepair(clientFd, ClientConnection(clientFd)));
-					}
-				}	
+					FD_SET(clientfd, &readSet);
+					if (clientfd > maxfd)
+						maxfd = clientfd;
+				}
+				if (conn.neeWrite() == true)
+				{
+					FD_SET(clientfd, &writeSet);
+					if (clientfd > maxfd)
+						maxfd = clientfd;
+				}
 			}
-		}
+			
 
-		//檢查所有現有 client FD，是否可讀/可寫
-		for (std::map<int, ClientOnnection>::iterator it = clients->begin; it != clients.end(); it++)
-		{
-			int cfd = it->first;
-			ClinetConnection &conn = it->second;
-			bool cosed = false;
-
-			//if can read
-			FD_ISSET(cfd, &readSet);
-			int n = conn.readData();
-			if (n <= 0)
+			//4.呼叫 select()，等待有任何 fd 就緒。
+			int readycount = select(maxfd + 1, &readSet, &wrteSet, NULL, &timeout);
+			
+			if (readycount < 0)
 			{
-				std::cout << "Client: " << cfd << " disconnected.\n";
-				close(cfd);
-				std::map<int, ClientConnection>::iterator tmp = it;
-				++it;
-				clients.erase(tmp);
-				closed = true;
+				std::"Error: select()" << std::endl;
+				//close fd
+				for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
+				{
+					close(it->first);
+				}
+				clients.clear();
+				break;//?
 			}
-
-			//6.若有 client 可寫，就 send()。
-			if (FD_ISEET(cfd, &writeSet) )
+			else if (readycount == 0)
 			{
-				int ret = ;
+				//timeout
+				continue;
 			}
-		}
+			//5.處理新連線 (accept)、
+			for (int i = 0; i < serverSockets.size(); i++)
+			{
+				int sfd = serverSockets[i];
+				if (FD_ISSET(sfd, &readSet))
+				{
+					while(true)//there might be multiple new connections in non-blocking mode at a port
+					{
+						struct sockaddr_in clientAddr;
+						socklen_t addrLen = sizeof(clientAddr);
+						int clientFd = accept(sfd, (sockaddr*)&clientAddr, &addrLen);
+						if (clientFd < 0)
+						{
+							std::cerr << "❌ Error: failed to accept new connection" << std::endl;
+							break;
+						}
+						else
+						{
+							std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
+							//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
+							clients.insert(std::makepair(clientFd, ClientConnection(clientFd)));
+						}
+					}	
+				}
+			}
+
+			//檢查所有現有 client FD，是否可讀
+			for (std::map<int, ClientConnection>::iterator it = clients->begin; it != clients.end(); it++)
+			{
+				int cfd = it->first;
+				ClinetConnection &conn = it->second;//?
+				bool cosed = false;
+
+				//if can read
+				if (FD_ISSET(cfd, &readSet))
+				{
+					int n = conn.readData();
+					if (n <= 0)
+					{
+						std::cout << "Client: " << cfd << " disconnected.\n";
+						close(cfd);
+						std::map<int, ClientConnection>::iterator tmp = it;
+						++it;
+						clients.erase(tmp);
+						//may need to FD_CLR(cfd, &readSet);
+						closed = true;
+					}
+				}
+				
+
+				//6.若有 client 可寫，就 send()。
+				if (!closed && FD_ISSET(cfd, &writeSet) )
+				{
+					int sent = conn.writeData();
+					if (sent < 0 || sent == 0)
+					{
+						if (sent < 0)
+							std::cerr << "❌ Error: failed to send data to client " << cfd << std::endl;
+						else
+							std::cout << "❌ Client " << cfd << " disconnected." << std::endl;
+						close(cfd);
+						std::map<int, ClientConnection>::iterator tmp = it;
+						clients.erase(tmp);
+						closed = true;
+					}
+				}
+
+				if (closed == false)
+				{
+					++it;
+				}
+			}
 		
+			//timeout control
+			auto now = std::chrono::steady_clock::now();//?
+			const int TIMEOUT_SECONDS = 60;
+			for (auto it = client.begin(); it != clients.end();) 
+			{
+				int cfd = it->first;
+				ClientConnection &conn = it->second;
+
+				auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActive()).count();
+				if (if elapsed > TIMEOUT_SECONDS)
+				{
+					std::cout<< "Client: " << cfd << " timeout." << std::endl;
+					close (cfd);
+					std::map<int, ClientConnection>::iterator tmp = it;
+					it++;
+					client.erase(tmp);
+
+				}
+				else
+				{
+					++it;
+				}
+			}
+			
+
 
 		
-		//7.若 client 斷線或錯誤，就 close() 並從容器移除。
+		
 		}
 		
 		

@@ -17,7 +17,7 @@
 #include <cstring>//memset
 #include <cerrno>
 #include <iostream>
-#include <fnctl.h>
+#include <arpa/inet.h> // sockadd_in
 
 class WebServed
 {
@@ -29,7 +29,8 @@ class WebServed
 	public:
 		WebServed(const std::vector<ServerConf>& parsedServers);
 		void start();
-		void runEventloop(int serverSockets);
+		
+		void runEventloop(std::vector<int> &serverSockets);
 
 };
 
