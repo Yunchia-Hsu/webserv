@@ -3,8 +3,8 @@
 
 */
 
-#ifndef WEBSERVED_HPP
-#define WEBSERVED_HPP
+#ifndef SERVED_HPP
+#define SERVED_HPP
 
 
 #include "ClientConnection.hpp"
@@ -20,7 +20,7 @@
 #include <iostream>
 #include <arpa/inet.h> // sockadd_in
 
-class WebServed
+class Served
 {
 	private:
 		std::vector<ServerConf> servers;
@@ -28,7 +28,7 @@ class WebServed
 		std::map<int, ClientConnection> clients;//_sockets
 
 	public:
-		WebServed(const std::vector<ServerConf>& parsedServers);
+		Served(const std::vector<ServerConf>& parsedServers);
 		void start();
 		
 		//void runEventloop(std::vector<int> &serverSockets);

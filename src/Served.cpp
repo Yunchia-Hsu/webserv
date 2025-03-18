@@ -1,11 +1,8 @@
-/*
-	This is Inka's test file!
 
-*/
 
-#include "WebServed.hpp"
+#include "Served.hpp"
 
-WebServed::WebServed(const std::vector<ServerConf>& parsedServers) : servers(parsedServers) {}
+Served::Served(const std::vector<ServerConf>& parsedServers) : servers(parsedServers) {}
 
 
 
@@ -29,7 +26,7 @@ void	*ft_memcpy(void *dst, const void *src, size_t n)
 
 
 //建立 Socket 與 Bind + Listen
-void WebServed::start()//將不同port存入不同的vector
+void Served::start()//將不同port存入不同的vector
 {
 	// std::vector<int> serverSockets;
 
@@ -48,11 +45,6 @@ void WebServed::start()//將不同port存入不同的vector
 			continue ;
 		}
 
-		int opt = 1;//常見為 SO_REUSEADDR，讓程式在重新啟動時，不會因為 TIME_WAIT 而無法綁定同個 port：
-		setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-		
-
-		// struct sockaddr_in address;
 		// address.sin_family = AF_INET;
 		// address.sin_addr.s_addr = INADDR_ANY;
 		// //OR//inet_pton(AF_INET, "0.0.0.0", &address.sin_addr);
@@ -95,7 +87,7 @@ void WebServed::start()//將不同port存入不同的vector
 
 
 // void WebServed::runEventloop(std::vector<int> &serverSockets)
-void WebServed::runEventloop()
+void Served::runEventloop()
 {
 	// save client info in a map
 	//std::map<int, ClientConnection> clients;
@@ -310,7 +302,7 @@ void WebServed::runEventloop()
 
 
 
-void WebServed::cleanup(void)
+void Served::cleanup(void)
 {
 	std::cout << "call cleanup " << std::endl;
 	//close server sockets

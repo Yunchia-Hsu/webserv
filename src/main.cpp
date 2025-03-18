@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include "confiParser.hpp"
-#include "WebServed.hpp"
+#include "Served.hpp"
 
 
 int main(int arc, char** arv)
@@ -21,7 +21,7 @@ int main(int arc, char** arv)
         /*
             Try WebServed
         */
-        WebServed server(parser.getServers());
+        Served server(parser.getServers());
 		std::vector<int> serverSockets;
         server.start();
 		//server.runEventloop(serverSockets);
