@@ -45,10 +45,14 @@ void Served::start()//將不同port存入不同的vector
 			continue ;
 		}
 
-		// address.sin_family = AF_INET;
-		// address.sin_addr.s_addr = INADDR_ANY;
-		// //OR//inet_pton(AF_INET, "0.0.0.0", &address.sin_addr);
-		// address.sin_port = htons(serverPort);
+		int opt = 1;
+		 if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+            std::cerr << "❌ Error: setsockopt(SO_REUSEADDR) failed" << std::endl;
+            close(serverFd);
+            continue;
+        }
+
+
 
 		struct sockaddr_in server_addr;
 		std::memset(&server_addr, 0, sizeof(server_addr));
@@ -114,13 +118,13 @@ void Served::runEventloop()
 			if (serverfd > maxfd)
 				maxfd = serverfd;
 		}
-		std::cout << "Eventloop 1" << std::endl;
+		
 		
 		//3.將「所有已連線的 client socket」根據需要讀/寫的狀況加入 readSet / writeSet。
 		
 		for (std::map<int, ClientConnection>::iterator it= clients.begin(); it!= clients.end(); ++it)
 		{
-			std::cout << "Eventloop 2" << std::endl;
+			
 			int clientfd = it->first;
 			ClientConnection &conn = it->second;
 			if (conn.needRead()== true)
@@ -153,13 +157,13 @@ void Served::runEventloop()
 		// 	}
 		
 		//int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
-		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, NULL);
+		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
 		std::cout << "readycount: " << readycount << std::endl;
 		if (readycount < 0)
 		{
 			std::cerr<< "Error: select()" << std::endl;
 			//close fd
-			std::cout << "Eventloop 3.1" << std::endl;
+			
 			for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
 				close(it->first);
@@ -169,20 +173,20 @@ void Served::runEventloop()
 		}
 		else if (readycount == 0)
 		{
-			std::cout << "Eventloop 3.2" << std::endl;
+			
 			//timeout
 			continue;
 		}
 		//5.處理新連線 (accept)、
 		for (int i = 0; i < serverSockets.size(); i++)
 		{
-			std::cout << "Eventloop 3.5" << std::endl;
+			
 			int sfd = serverSockets[i];
 			if (FD_ISSET(sfd, &readSet))
 			{
 				while(true)//there might be multiple new connections in non-blocking mode at a port
 				{
-					std::cout << "Eventloop 4" << std::endl;
+					
 					struct sockaddr_in clientAddr;
 					socklen_t addrLen = sizeof(clientAddr);
 					int clientFd = accept(sfd, (sockaddr*)&clientAddr, &addrLen);
@@ -217,7 +221,7 @@ void Served::runEventloop()
 		//檢查所有現有 client FD，是否可讀
 		for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
-			//std::cout << "Eventloop 5" << std::endl;
+			
 			int cfd = it->first;
 			ClientConnection &conn = it->second;//?
 			bool closed = false;
@@ -226,19 +230,39 @@ void Served::runEventloop()
 			if (FD_ISSET(cfd, &readSet))
 			{
 				int n = conn.readData();
-				if (n <= 0)
+				if (n == 0)
 				{
-					std::cout << "Client: " << cfd << " disconnected. \n";
+					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
 					close(cfd);
-					std::map<int, ClientConnection>::iterator tmp = it;
-					++it;
-					clients.erase(tmp);
-					//may need to FD_CLR(cfd, &readSet);
+					//std::map<int, ClientConnection>::iterator tmp = it;
+					
+					//++it;
+					clients.erase(it);
+					
+					FD_CLR(cfd, &readSet);
+					it = clients.begin();
 					closed = true;
+						
+					break;// may cause cannot detect FD if need write 
+				}
+				if (n < 0)
+				{
+					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
+					close(cfd);
+					//std::map<int, ClientConnection>::iterator tmp = it;
+					
+					//++it;
+					clients.erase(it);
+					
+					FD_CLR(cfd, &readSet);
+					it = clients.begin();
+					closed = true;
+						
+					
 				}
 			}
 			
-
+				
 			//6.若有 client 可寫，就 send()。
 			if (!closed && FD_ISSET(cfd, &writeSet) )
 			{
@@ -249,7 +273,7 @@ void Served::runEventloop()
 					if (sent < 0)
 						std::cerr << "❌ Error: failed to send data to client " << cfd << std::endl;
 					else
-						std::cout << "❌ Client " << cfd << " disconnected." << std::endl;
+						std::cout << "❌ Client " << cfd << " disconnected.hehehe" << std::endl;
 					close(cfd);
 					std::map<int, ClientConnection>::iterator tmp = it;
 					clients.erase(tmp);
@@ -257,7 +281,7 @@ void Served::runEventloop()
 					closed = true;
 				}
 			}
-
+			
 			// if (closed == false)
 			// {
 			// 	++it;
@@ -293,7 +317,8 @@ void Served::runEventloop()
 
 		*/
 	
-	
+			std::cout << "6\n";
+
 	}
 	std::cout << "Eventloop end" << std::endl;
 	
