@@ -17,6 +17,8 @@ void ConfiParser::parseFile(const std::string& filename)
         throw std::runtime_error("Failed to open the file: " + filename);
     }
 
+	std::set<std::pair<std::string, int>> usedPorts;
+
     std::string line;
     while (std::getline(file, line))
     {
@@ -36,44 +38,139 @@ void ConfiParser::parseFile(const std::string& filename)
 			std::getline(file, line);
 			ServerConf server;
 			parseServerStuff(file, server);
+		
+			std::pair<std::string, int> hostPort = {server.host, server.port};
+			if (usedPorts.find(hostPort) != usedPorts.end()) 
+			{
+    			std::cerr << "⚠️ WARNING: You're trying to use the same port multiple times! " << std::endl;
+			}
+			usedPorts.insert(hostPort);
+
 			servers.push_back(server);
-			//this->servers.push_back(server);
 		}
 	}
 	file.close();
 	testPrinter();
 }
 
-		/*
-		else if (line.find("http") == 0 || line.find("events") == 0)
+//This function will parser the max-client_body_size from str to size_t
+size_t parseBody(const std::string& value)
+{
+	size_t multip = 1;
+	std::string n = value;
+
+	if (value.empty())
+	{
+		std::cerr << "⚠️ Warning! Wrong max_body set, default(1M) used instead" << std::endl;
+		return 1048576; // 1M as bytes
+	}
+
+	//converter
+	char sizeC = value.back();
+
+	if (sizeC == 'K' || sizeC == 'k')
+	{
+        multip = 1024; // Convert KB to bytes
+        n.pop_back();		
+	}
+	else if (sizeC == 'M' || sizeC == 'M')
+	{
+        multip = 1024 * 1024; // Convert MB to bytes
+        n.pop_back();
+	}
+	else if (sizeC == 'G' || sizeC == 'g')
+	{
+        multip = 1024 * 1024 * 1024; // Convert GB to bytes
+        n.pop_back();
+	}
+	else
+	{
+		std::cerr << "⚠️ Warning! I need a unit for my  Body, assuming (M)" << std::endl;
+		multip = 1024 * 1024; // Convert MB to bytes
+	}
+	try
+	{
+		size_t size = std::stoul(n) * multip;
+		if (size > 1048576 || size < 0)
 		{
-			std::getline(file, line);
-			continue ;
+			std::cerr << "⚠️ Warning! Max body is 1M, so it was set as 1M" << std::endl;
+			return 1048576;
+		}
+		return size;
+	}
+	catch (...)
+	{
+		std::cerr << "Error error, inalid BodySize, setting the size as 1M" << std::endl;
+		return 1048576;
+	}
+}
+
+void ConfiParser::serverKeys(const std::string& keyWord, const std::string& value, ServerConf& server)
+{
+	if (keyWord  == "listen")
+	{
+	
+		std::cout  << "Raw listen value: " << value << std::endl; // DEGUB
+
+		size_t doubleDot = value.find(":");
+		if (doubleDot != std::string::npos)
+		{
+			server.host = value.substr(0, doubleDot);
+			server.port = std::stoi(value.substr(doubleDot + 1));
 		}
 		else
 		{
-			if (line == "}")
-				continue ;
-			// store global  settinng outside of the {}
-			size_t emptyPos = line.find(" ");
-			if (emptyPos == std::string::npos)
-			{
-				std::cerr << "WARNING: Uknown (gotta catch them all!) global directive -> '" << line << "'" << std::endl;
-				continue ;
-			}
-			std::string key =line.substr(0, emptyPos);
-			std::string value = line.substr(emptyPos + 1);
-			if (!value.empty() && value.back() == ';')
-				value.pop_back();
-			globalConfi[key]  = value;
-
+			server.host = "0.0.0.0"; // set to default
+			server.port = std::stoi(value);
 		}
-    }
-    file.close();
+		
+		std::cout << "✅ Parsed port: " << server.port << std::endl; // DEBUG
 
-    testPrinter();	/// DEBUGPRINT
+	}
+	else if (keyWord == "server_name")
+	{
+		std::istringstream iss(value);
+		std::string name;
+		while (iss >> name)
+		{
+			server.serverNames.push_back(name);
+		}
+	}
+	else if (keyWord == "root")
+	{
+		server.root = value;
+	}
+	else if (keyWord == "index")
+	{
+		server.index = value;
+	}
+	else if  (keyWord == "ssl_certificate")
+	{
+		server.sslCertificate =  value;
+	}
+	else if (keyWord == "ssl_certificate_key")
+	{
+		server.sslCertificateKey = value;
+	}
+	else if (keyWord == "gzip")
+	{
+		server.gzip  = value;
+	}
+	else if (keyWord == "client_max_body_size")
+	{
+		server.clientMaxBodySize = value; // this not right!
+		server.clientMaxBodySize = parseBody(value);
+	}
+	else if (keyWord == "error_page" || keyWord == "location" || keyWord == "methods" || keyWord == "allow_methods")
+	{
+		return ;
+	}
+	else
+	{
+		std::cerr << "HOIKS! Unrecognized server key -> '" << keyWord << "'" << std::endl;
+		server.extraConfi[keyWord] = value;
+	}
 }
-	*/
 
 void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 {
@@ -106,51 +203,13 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		if (!value.empty() && value.back() == ';')
 			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen
 
-		
-		/*
-			"SIMPLE" KEY WORDS
-		*/
-
-		if (keyWord  == "listen")
-		{
-			std::cout  << "Raw listen value: " << value << std::endl; //testestestest
-			server.port = std::stoi(value.substr(value.find(":") + 1));
-			std::cout << "✅ Parsed port: " << server.port << std::endl;
-		}
-		else if (keyWord == "server_name")
-		{
-			server.serverName  = value;
-		}
-		else if (keyWord == "root")
-		{
-			server.root = value;
-		}
-		else if (keyWord == "index")
-		{
-			server.index = value;
-		}
-		else if  (keyWord == "ssl_certificate")
-		{
-			server.sslCertificate =  value;
-		}
-		else if (keyWord == "ssl_certificate_key")
-		{
-			server.sslCertificateKey = value;
-		}
-		else if (keyWord == "gzip")
-		{
-			server.gzip  = value;
-		}
-		else if (keyWord == "client_max_body_size")
-		{
-			server.clientMaxBodySize = value;
-		}
+		serverKeys(keyWord, value, server);
 
 		/* 
 			Complex Key Words
 		*/
 
-		else if (keyWord == "error_page")
+		if (keyWord == "error_page")
 		{
 			size_t spPos = line.find(" ");
 			if  (spPos == std::string::npos)
@@ -163,7 +222,6 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			server.errorPages[errorCode] = errorFile;
 
 		}
-
 		else if (keyWord == "location")
 		{
 			RouteConf route;
@@ -194,14 +252,78 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			while (methodStream >> method)
 				server.methods.insert(method);
 		}
+	}
+	
+	/*	
+		Add default values if needed	
+	*/
+	if (server.errorPages.empty())
+	{
+		server.errorPages[404] = "/default_404.html";
+		server.errorPages[500] = "/default_500.html";
+	}
+	if (server.clientMaxBodySize.empty())
+	{
+		server.clientMaxBodySize = "1M";
+	}
 
-		else
+	server.printConfig(); // DEBUGPRINT
+}
+
+void ConfiParser::routeKeys(const std::string& keyWord, const std::string& value, RouteConf& route)
+{
+	if (keyWord == "root")
+	{
+		route.root = value;
+	}
+	else if (keyWord == "cgi_path")
+	{
+		route.CGIPath = value;
+	}
+	else if (keyWord == "index")
+	{
+		route.index = value;
+	}
+	else if (keyWord == "try_files")
+	{
+		route.tryFiles = value;
+	}
+	else if (keyWord == "include")
+	{
+		route.includeFiles.push_back(value);
+	}
+	else if (keyWord == "return" || keyWord == "redirect")
+	{
+		route.redirect = value;
+	}
+	else if (keyWord == "autoindex")
+	{
+		route.autoindex = (value == "on");
+	}
+
+	else if (keyWord == "alias")
+	{
+		if (!value.empty())
 		{
-			std::cerr << "HOIKS! Unrecognized server key -> '" << keyWord << "'" << std::endl;
-			server.extraConfi[keyWord] = value;
+			route.alias = value;
 		}
 	}
-	server.printConfig(); // DEBUGPRINT
+
+	else if (keyWord == "methods" || keyWord == "allow_methods")
+	{
+		std::istringstream methodStream(value);
+		std::string method;
+		while (methodStream >> method)
+			route.methods.insert(method);
+	}
+	else if (keyWord == "location")
+	{
+		return ;
+	}
+	else
+	{
+		std::cerr << "HOIKS! Unrecognized route key-> '" << keyWord << "'" << std::endl;
+	}
 }
 
 void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
@@ -249,53 +371,12 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		if (!value.empty() && value.back() == ';')
 			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen		
 
-
-		/*
-			Simple  Key Words
-		*/
-
-		if (keyWord == "root")
-		{
-			route.root = value;
-		}
-		else if (keyWord == "cgi_path")
-		{
-			route.CGIPath = value;
-		}
-		else if (keyWord == "index")
-		{
-			route.index = value;
-		}
-		else if (keyWord == "try_files")
-		{
-			route.tryFiles = value;
-		}
-		else if (keyWord == "include")
-		{
-			route.includeFiles.push_back(value);
-		}
-
-		else if (keyWord == "alias")
-		{
-			if (value.empty())
-			{
-				continue ;
-			}
-			route.alias = value;
-		}
-
-		else if (keyWord == "methods" || keyWord == "allow_methods")
-		{
-			std::istringstream methodStream(value);
-			std::string method;
-			while (methodStream >> method)
-				route.methods.insert(method);
-		}
+		routeKeys(keyWord, value, route);
 
 		/*
 			Nested locations! --> It will create loop untill all is set!
 		*/
-		else if  (keyWord == "location")
+		if  (keyWord == "location")
 		{
 			RouteConf  nestedRoute;
 			nestedRoute.location = value;
@@ -311,11 +392,6 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 			}
 			parseRouteStuff(file, nestedRoute);
 			route.nestedRoutes.push_back(nestedRoute);
-		}
-		
-		else
-		{
-			std::cerr << "HOIKS! Unrecognized route key-> '" << keyWord << "'" << std::endl;
 		}
 	}
 	route.printConfig(); // DEBUGPRINT
