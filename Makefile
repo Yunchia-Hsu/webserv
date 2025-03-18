@@ -2,7 +2,7 @@
 
 CXX = c++
 FLAGS = -Wall -Wextra -Werror -std=c++11
-NAME = parparpar
+NAME = WebServed
 
 SRC = src/main.cpp src/confiParser.cpp src/RouteConf.cpp src/ServerConf.cpp src/WebServed.cpp
 OBJ = $(SRC:.cpp=.o)
