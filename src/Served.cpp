@@ -230,7 +230,22 @@ void Served::runEventloop()
 			if (FD_ISSET(cfd, &readSet))
 			{
 				int n = conn.readData();
-				if (n == 0)
+				// if (n == 0)
+				// {
+				// 	std::cout << "Client: " << cfd << " disconnected. hahaha\n";
+				// 	close(cfd);
+				// 	//std::map<int, ClientConnection>::iterator tmp = it;
+					
+				// 	//++it;
+				// 	clients.erase(it);
+					
+				// 	FD_CLR(cfd, &readSet);
+				// 	it = clients.begin();
+				// 	closed = true;
+						
+				// 	break;// may cause cannot detect FD if need write 
+				// }
+				if (n <= 0)
 				{
 					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
 					close(cfd);
@@ -242,22 +257,7 @@ void Served::runEventloop()
 					FD_CLR(cfd, &readSet);
 					it = clients.begin();
 					closed = true;
-						
-					break;// may cause cannot detect FD if need write 
-				}
-				if (n < 0)
-				{
-					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
-					close(cfd);
-					//std::map<int, ClientConnection>::iterator tmp = it;
-					
-					//++it;
-					clients.erase(it);
-					
-					FD_CLR(cfd, &readSet);
-					it = clients.begin();
-					closed = true;
-						
+					break;
 					
 				}
 			}

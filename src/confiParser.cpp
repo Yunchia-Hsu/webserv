@@ -17,7 +17,7 @@ void ConfiParser::parseFile(const std::string& filename)
         throw std::runtime_error("Failed to open the file: " + filename);
     }
 
-	std::set<std::pair<std::string, int>> usedPorts;
+	std::set<std::pair<std::string, int> >  usedPorts;
 
     std::string line;
     while (std::getline(file, line))
