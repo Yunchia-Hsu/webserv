@@ -26,7 +26,7 @@ class ServerConf
         int port;
         size_t maxBody;
         std::string host;
-        std::string serverName;
+        std::vector<std::string> serverNames;
 		std::map<int, std::string> errorPages; // for exmpl 404 -> "404 .html not connecting"
 		std::vector<std::string> routes;
         std::string root;

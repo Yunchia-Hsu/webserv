@@ -72,12 +72,15 @@ void WebServed::start()
 					Simple response
 				*/ 
 				std::string response =
-					"HTTP/1.1 200 OK\r\n"
-					"Content-Length: 6\r\n"
-					"Content-Type: text/plain\r\n"
-					"Connection: close\r\n"
-					"\r\n"
-					"Hello!";
+				"HTTP/1.1 200 OK\r\n"
+				"Content-Length: 24\r\n"  // Adjusted for new content length
+				"Content-Type: text/plain\r\n"
+				"Connection: close\r\n"
+				"\r\n"
+				" /\\_/\\  \n"
+				"( o.o ) \n"
+				" > ^ <  \n";
+			
 
 				std::cout << "📡 Sending Response:\n" << response << std::endl;
 
