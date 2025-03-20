@@ -1,7 +1,7 @@
 
 
 #include "Served.hpp"
-
+#include <fcntl.h>    // For fcntl(), F_GETFL, F_SETFL, O_NONBLOCK  
 Served::Served(const std::vector<ServerConf>& parsedServers) : servers(parsedServers) {}
 
 
@@ -23,6 +23,17 @@ void	*ft_memcpy(void *dst, const void *src, size_t n)
 	return (dst);
 }
 
+static int	check_long(long number, int digit)
+{
+	long long	llong_max;
+
+	llong_max = 9223372036854775807;
+	if (number > llong_max / 10)
+		return (1);
+	else if (number * 10 > llong_max - digit)
+		return (1);
+	return (0);
+}
 
 
 //建立 Socket 與 Bind + Listen
@@ -36,8 +47,16 @@ void Served::start()//將不同port存入不同的vector
 		
 		int serverPort = servers[i].port;
 
-		
-		int serverFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+		// for linux
+		//int serverFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+
+		//for mac  no error handling
+		int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+		int flags = fcntl(serverFd, F_GETFL, 0);
+		flags |= O_NONBLOCK;
+		fcntl(serverFd, F_SETFL, flags);
+		//for mac
+
 
 		if (serverFd == -1)
 		{
@@ -138,15 +157,15 @@ void Served::runEventloop()
 		}
 		
 		///test///
-		std::cout << "&& connected clients: ";
-		for (auto it = clients.begin(); it != clients.end(); ++it) {
-			std::cout << it->first << " ";
-		}
+		//std::cout << "&& connected clients: ";
+		// for (auto it = clients.begin(); it != clients.end(); ++it) {
+		// 	std::cout << it->first << " ";
+		// }
 		std::cout << std::endl;
-		if (clients.empty())
-		{
-			std::cerr << "❌ Error: clients empty" << std::endl;
-		}
+		// if (clients.empty())
+		// {
+		// 	std::cerr << "❌ Error: clients empty" << std::endl;
+		// }
 
 
 
@@ -158,7 +177,7 @@ void Served::runEventloop()
 		
 		//int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
 		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
-		std::cout << "readycount: " << readycount << std::endl;
+		//std::cout << "readycount: " << readycount << std::endl;
 		if (readycount < 0)
 		{
 			std::cerr<< "Error: select()" << std::endl;
@@ -177,7 +196,7 @@ void Served::runEventloop()
 			//timeout
 			continue;
 		}
-		//5.處理新連線 (accept)、
+		//5.handle new clients (accept)、
 		for (int i = 0; i < serverSockets.size(); i++)
 		{
 			
@@ -194,8 +213,6 @@ void Served::runEventloop()
 
 					if (clientFd < 0)
 					{
-						
-						
 						std::cerr << "❌ Error: failed to accept new connection" << std::endl;
 						break;
 					}
@@ -230,22 +247,8 @@ void Served::runEventloop()
 			if (FD_ISSET(cfd, &readSet))
 			{
 				int n = conn.readData();
-				// if (n == 0)
-				// {
-				// 	std::cout << "Client: " << cfd << " disconnected. hahaha\n";
-				// 	close(cfd);
-				// 	//std::map<int, ClientConnection>::iterator tmp = it;
-					
-				// 	//++it;
-				// 	clients.erase(it);
-					
-				// 	FD_CLR(cfd, &readSet);
-				// 	it = clients.begin();
-				// 	closed = true;
-						
-				// 	break;// may cause cannot detect FD if need write 
-				// }
-				if (n <= 0)
+			
+				if (n < 0)
 				{
 					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
 					close(cfd);
@@ -259,6 +262,11 @@ void Served::runEventloop()
 					closed = true;
 					break;
 					
+				}
+				else if (n == 0) //接收完畢
+				{
+					FD_CLR(cfd, &readSet);
+					FD_SET(cfd, &writeSet);
 				}
 			}
 			
@@ -317,7 +325,6 @@ void Served::runEventloop()
 
 		*/
 	
-			std::cout << "6\n";
 
 	}
 	std::cout << "Eventloop end" << std::endl;

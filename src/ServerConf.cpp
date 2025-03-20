@@ -1,7 +1,10 @@
 #include "ServerConf.hpp"
 #include <iostream>
 
-ServerConf::ServerConf() : port(80), maxBody(1048576), host("localhost"), serverNames({"default"}) {}
+ServerConf::ServerConf() : port(80), maxBody(1048576), host("localhost") 
+{
+    this->serverNames.push_back("default");
+}
 
 /*
     This is here for debugging

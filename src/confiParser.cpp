@@ -39,7 +39,9 @@ void ConfiParser::parseFile(const std::string& filename)
 			ServerConf server;
 			parseServerStuff(file, server);
 		
-			std::pair<std::string, int> hostPort = {server.host, server.port};
+			//std::pair<std::string, int> hostPort = {server.host, server.port};
+			std::pair<std::string, int> hostPort = std::make_pair(server.host, server.port);
+
 			if (usedPorts.find(hostPort) != usedPorts.end()) 
 			{
     			std::cerr << "⚠️ WARNING: You're trying to use the same port multiple times! " << std::endl;
