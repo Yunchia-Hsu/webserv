@@ -23,18 +23,6 @@ void	*ft_memcpy(void *dst, const void *src, size_t n)
 	return (dst);
 }
 
-static int	check_long(long number, int digit)
-{
-	long long	llong_max;
-
-	llong_max = 9223372036854775807;
-	if (number > llong_max / 10)
-		return (1);
-	else if (number * 10 > llong_max - digit)
-		return (1);
-	return (0);
-}
-
 
 //建立 Socket 與 Bind + Listen
 void Served::start()//將不同port存入不同的vector
@@ -161,7 +149,7 @@ void Served::runEventloop()
 		// for (auto it = clients.begin(); it != clients.end(); ++it) {
 		// 	std::cout << it->first << " ";
 		// }
-		std::cout << std::endl;
+		//std::cout << std::endl;
 		// if (clients.empty())
 		// {
 		// 	std::cerr << "❌ Error: clients empty" << std::endl;
@@ -239,6 +227,7 @@ void Served::runEventloop()
 		for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			
+			std::cout << "-1" << std::endl;
 			int cfd = it->first;
 			ClientConnection &conn = it->second;//?
 			bool closed = false;
@@ -283,49 +272,50 @@ void Served::runEventloop()
 					else
 						std::cout << "❌ Client " << cfd << " disconnected.hehehe" << std::endl;
 					close(cfd);
-					std::map<int, ClientConnection>::iterator tmp = it;
-					clients.erase(tmp);
-					++it;
+					//std::map<int, ClientConnection>::iterator tmp = it;
+					
+					clients.erase(it);
+					
+					it = clients.begin();
+					
 					closed = true;
+					break;
 				}
 			}
-			
+	
 			// if (closed == false)
 			// {
 			// 	++it;
 			// }
 		}
 	
-		/*
-		//timeout control
-		auto now = std::chrono::steady_clock::now();//?
-		std::cout << "timeout " << std::endl;
-		const int TIMEOUT_SECONDS = 60;
-		for (auto it = clients.begin(); it != clients.end();) 
-		{
-			int cfd = it->first;
-			ClientConnection &conn = it->second;
-
-			auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActivity()).count();
-			if ( elapsed > TIMEOUT_SECONDS)
-			{
-				std::cout<< "Client: " << cfd << " timeout." << std::endl;
-				close (cfd);
-				std::map<int, ClientConnection>::iterator tmp = it;
-				it++;
-				clients.erase(tmp);
-
-			}
-			else
-			{
-				++it;
-			}
-		}
 		
+		//timeout control
+		
+		// auto now = std::chrono::steady_clock::now();//?
+		// std::cout << "in timeout " << std::endl;
+		// const int TIMEOUT_SECONDS = 60;
+		// for (auto it = clients.begin(); it != clients.end();) 
+		// {
+		// 	int cfd = it->first;
+		// 	ClientConnection &conn = it->second;
 
-		*/
-	
+		// 	auto elapsed = std::chrono::duration_cast<std::chrono::seconds >(now - conn.getLastActivity()).count();
+		// 	std::cout << "elapsed: " << elapsed << std::endl; 
+		// 	if ( elapsed > TIMEOUT_SECONDS)
+		// 	{
+		// 		std::cout<< "Client: " << cfd << " timeout." << std::endl;
+		// 		close (cfd);
+		// 		std::map<int, ClientConnection>::iterator tmp = it;
+		// 		it++;
+		// 		clients.erase(tmp);
 
+		// 	}
+		// 	else
+		// 	{
+		// 		++it;
+		// 	}
+		// }
 	}
 	std::cout << "Eventloop end" << std::endl;
 	
@@ -397,14 +387,3 @@ void Served::cleanup(void)
 
 
 
-//2.進入事件迴圈
-//select() → 檢查哪些 fd 可讀/可寫。
-//可讀的 server_fd → accept() 新連線 → 加到 clientConnections。
-//可讀/可寫的 client_fd → 依狀態做 recv() 或 send() → 更新狀態。
-
-//3.狀態管理
-//STATE_READ_HEADER → STATE_READ_BODY → STATE_PROCESSING → STATE_WRITE_RESPONSE → STATE_DONE。
-//適時關閉連線（或繼續保持連線，若要支援 keep-alive）。
-
-//4.錯誤/Timeout 處理
-//不正常就斷線，並清理資源。

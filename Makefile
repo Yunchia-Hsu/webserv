@@ -2,9 +2,9 @@
 
 CXX = c++
 FLAGS = -Wall -Wextra -Werror -std=c++11
-NAME = WebServed
+NAME = webserved
 
-SRC = src/main.cpp src/confiParser.cpp src/RouteConf.cpp src/ServerConf.cpp src/Served.cpp
+SRC = src/main.cpp src/confiParser.cpp src/RouteConf.cpp src/ServerConf.cpp src/Served.cpp src/ClientConnection.cpp
 OBJ = $(SRC:.cpp=.o)
 
 all: $(NAME)

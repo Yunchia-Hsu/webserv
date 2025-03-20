@@ -20,6 +20,8 @@
 #include <iostream>
 #include <arpa/inet.h> // sockadd_in
 
+class ClientConnection;
+
 class Served
 {
 	private:
