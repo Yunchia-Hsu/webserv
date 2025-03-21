@@ -2,7 +2,7 @@
 #include "ClientConnection.hpp"
 
 
-ClientConnection::ClientConnection(int cfd): fd(cfd), writeOffset(0)
+ClientConnection::ClientConnection(int cfd): fd(cfd), writeOffset(0),lastActivity(std::chrono::steady_clock::now())  // ✅ 初始化
 {
     //for test
     // writeBuffer = "Hello from server!   for test\n";
@@ -44,16 +44,18 @@ int ClientConnection::readData() //要進一步確保HTTP request 是完整的
     memset(buffer, 0, sizeof(buffer));
     
     int n =  recv(fd, buffer, sizeof(buffer), 0);
-    lastActive = std::chrono::steady_clock::now();
+    //lastActive = std::chrono::high_resolution_clock::now();
+	
     // 先使用 recv() 讀取資料，將讀取到的資料追加到一個暫存的字串（例如 writeBuffer 或 _requests[cfd]）。
     //接著檢查這個字串是否包含 "\r\n\r\n"，確定 Header 是否接收完整。
-    if (n < 0)
+    if (n <= 0)
         return (-1); // recv error
 
-    if (n >= 0)
+    if (n > 0)
     {
         writeBuffer.append(buffer, n);
         std::cout << "client: "<< fd << " recieved "<< n <<" bytessss" << std::endl;
+		lastActivity = std::chrono::steady_clock::now();
         //writeBuffer =
         //check content length
         /*
@@ -83,41 +85,41 @@ int ClientConnection::readData() //要進一步確保HTTP request 是完整的
 
    // std::cout << "sent content: \n" << writeBuffer <<std::endl;
 
-    if(writeBuffer.find("\r\n\r\n") != std::string::npos) //如果 Header 完整
-    {
-        
-        std::cout << "header checkend done" << std::endl;
-        //如果有 "Content-Length:" 標頭，則計算剩餘的資料是否達到或超過 Content-Length 指定的值。
-        if (writeBuffer.find("Content-Length:") != std::string::npos)//有content lenth
-        {
-            //content length 
-            int contentlenpos = writeBuffer.find("Content-Length:");
-            int contentlenend = writeBuffer.find("\r\n", contentlenpos); 
-            int headerend = writeBuffer.find("\r\n\r\n");
-            std::string str = writeBuffer.substr(writeBuffer.find(contentlenpos+15, contentlenend- (contentlenpos+15)));
-            size_t contentlen = atoi(str.c_str());
-            if (writeBuffer.size() >= headerend + 4 +  contentlen)
-            {
-                std::cout << "Content-Length checkend done" << std::endl;
-                return 0;
-            }
-        }
-            //如果是 chunked 編碼，則解析每個分塊，直到讀到分塊大小為 0。
-        else if (writeBuffer.find("Transfer-Encoding: chunked") != std::string::npos)//chunked
-        { 
-            if (checkend(writeBuffer, "0\r\n\r\n") == 0)
-            {
-                std::cout << "Transfer-Encoding: chunked checkend done" << std::endl;
-                return 0;
-            }
-        }
-        else if((writeBuffer.find("Content-Length:") == std::string::npos)  && (writeBuffer.find("chunked transfer encoding") == std::string::npos))
-        {
-            std::cout <<"no length or chuncked"    << std::endl;
-            return 0;
-        }
-        
-    }
+		if(writeBuffer.find("\r\n\r\n") != std::string::npos) //如果 Header 完整
+		{
+			
+			std::cout << "header checkend done" << std::endl;
+			//如果有 "Content-Length:" 標頭，則計算剩餘的資料是否達到或超過 Content-Length 指定的值。
+			if (writeBuffer.find("Content-Length:") != std::string::npos)//有content lenth
+			{
+				//content length 
+				int contentlenpos = writeBuffer.find("Content-Length:");
+				int contentlenend = writeBuffer.find("\r\n", contentlenpos); 
+				int headerend = writeBuffer.find("\r\n\r\n");
+				std::string str = writeBuffer.substr(writeBuffer.find(contentlenpos+15, contentlenend- (contentlenpos+15)));
+				size_t contentlen = atoi(str.c_str());
+				if (writeBuffer.size() >= headerend + 4 +  contentlen)
+				{
+					std::cout << "Content-Length checkend done" << std::endl;
+					return 0;
+				}
+			}
+				//如果是 chunked 編碼，則解析每個分塊，直到讀到分塊大小為 0。
+			else if (writeBuffer.find("Transfer-Encoding: chunked") != std::string::npos)//chunked
+			{ 
+				if (checkend(writeBuffer, "0\r\n\r\n") == 0)
+				{
+					std::cout << "Transfer-Encoding: chunked checkend done" << std::endl;
+					return 0;
+				}
+			}
+			else if((writeBuffer.find("Content-Length:") == std::string::npos)  && (writeBuffer.find("chunked transfer encoding") == std::string::npos))
+			{
+				std::cout <<"no length or chuncked"    << std::endl;
+				return 0;
+			}
+			
+		}
         std::cout << "header not completed" << std::endl;
         return 1;
     } 
@@ -166,7 +168,8 @@ int ClientConnection::writeData()
             remaining -= sent;
             std::cout << "client: " << fd<< " sent " << sent << " bytes." <<std::endl; 
             
-            lastActive = std::chrono::steady_clock::now();
+            //lastActive = std::chrono::high_resolution_clock::now();
+			lastActivity = std::chrono::steady_clock::now();
         }
         else if (sent < 0)
         {
@@ -190,7 +193,7 @@ int ClientConnection::writeData()
 //lastactivity getter
 std::chrono::steady_clock::time_point ClientConnection::getLastActivity() const
 {
-    return lastActive;
+    return lastActivity;
 }
 
 void  ClientConnection::clean()

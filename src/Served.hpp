@@ -1,24 +1,23 @@
-/*
-	This is Inka's test file!
-
-*/
 
 #ifndef SERVED_HPP
 #define SERVED_HPP
-
 
 #include "ClientConnection.hpp"
 #include "confiParser.hpp"
 #include <iostream>
 #include <vector>
 #include <map>
-#include <sys/socket.h>
+
+// POSIX 網路相關標頭 in order
+#include <sys/types.h>
 #include <netinet/in.h>
-#include <unistd.h>
-#include <cstring>//memset
-#include <cerrno>
-#include <iostream>
-#include <arpa/inet.h> // sockadd_in
+#include <arpa/inet.h>//定義 sockaddr_in、in_addr_t
+#include <unistd.h>// close(), read(), write()
+
+// C++ 封裝標頭
+#include <cstring>   // for memset
+#include <cerrno>    // for errno
+
 
 class ClientConnection;
 

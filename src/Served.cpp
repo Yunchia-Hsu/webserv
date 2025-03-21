@@ -36,13 +36,13 @@ void Served::start()//將不同port存入不同的vector
 		int serverPort = servers[i].port;
 
 		// for linux
-		//int serverFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+		int serverFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
 		//for mac  no error handling
-		int serverFd = socket(AF_INET, SOCK_STREAM, 0);
-		int flags = fcntl(serverFd, F_GETFL, 0);
-		flags |= O_NONBLOCK;
-		fcntl(serverFd, F_SETFL, flags);
+		// int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+		// int flags = fcntl(serverFd, F_GETFL, 0);
+		// flags |= O_NONBLOCK;
+		// fcntl(serverFd, F_SETFL, flags);
 		//for mac
 
 
@@ -119,6 +119,7 @@ void Served::runEventloop()
 		//2.將「所有 server socket」加入 readSet，以便檢查是否有新連線要 accept()。
 		for (size_t i = 0; i < serverSockets.size(); i++)
 		{
+			
 			int serverfd = serverSockets[i];
 			//std::cout << "serverfd: " << serverfd << std::endl;
 			FD_SET(serverfd, &readSet);
@@ -145,10 +146,10 @@ void Served::runEventloop()
 		}
 		
 		///test///
-		//std::cout << "&& connected clients: ";
-		// for (auto it = clients.begin(); it != clients.end(); ++it) {
-		// 	std::cout << it->first << " ";
-		// }
+		std::cout << "&& connected clients: ";
+		for (auto it = clients.begin(); it != clients.end(); ++it) {
+			std::cout << it->first << " ";
+		}
 		//std::cout << std::endl;
 		// if (clients.empty())
 		// {
@@ -163,9 +164,9 @@ void Served::runEventloop()
 		// 		std::cout << "🔍 server socket fd: " << serverSockets[i] << std::endl;
 		// 	}
 		
-		//int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
+
 		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
-		//std::cout << "readycount: " << readycount << std::endl;
+		std::cout << "readycount: " << readycount << std::endl;
 		if (readycount < 0)
 		{
 			std::cerr<< "Error: select()" << std::endl;
@@ -176,12 +177,38 @@ void Served::runEventloop()
 				close(it->first);
 			}
 			clients.clear();
-			break;//?
+			break;//break the while loop and cleanup();
 		}
-		else if (readycount == 0)
+		
+		//timeout control
+		std::cout << "in timeout " << std::endl;
+		auto now = std::chrono::steady_clock::now();
+		const int TIMEOUT_SECONDS = 30;
+		for (auto it = clients.begin(); it != clients.end();) 
 		{
-			
-			//timeout
+			int cfd = it->first;
+			ClientConnection &conn = it->second;
+		
+			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActivity()).count();
+			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
+			if ( duration > TIMEOUT_SECONDS)
+			{
+				
+				
+				std::cout<< "Client: " << cfd << " timeout." << std::endl;
+				close (cfd);
+				it = clients.erase(it);
+				continue;
+			}
+			else
+			{
+				std::cout << "[timeout check] ++" << std::endl;
+				++it;
+			}
+		}
+		
+		if (readycount == 0)
+		{
 			continue;
 		}
 		//5.handle new clients (accept)、
@@ -194,6 +221,7 @@ void Served::runEventloop()
 				while(true)//there might be multiple new connections in non-blocking mode at a port
 				{
 					
+					std::cout << " in while true loop"<< std::endl;
 					struct sockaddr_in clientAddr;
 					socklen_t addrLen = sizeof(clientAddr);
 					int clientFd = accept(sfd, (sockaddr*)&clientAddr, &addrLen);
@@ -241,9 +269,6 @@ void Served::runEventloop()
 				{
 					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
 					close(cfd);
-					//std::map<int, ClientConnection>::iterator tmp = it;
-					
-					//++it;
 					clients.erase(it);
 					
 					FD_CLR(cfd, &readSet);
@@ -261,9 +286,9 @@ void Served::runEventloop()
 			
 				
 			//6.若有 client 可寫，就 send()。
-			if (!closed && FD_ISSET(cfd, &writeSet) )
+			//if (!closed && FD_ISSET(cfd, &writeSet) )
+			if (!closed && FD_ISSET(cfd, &writeSet) && conn.needWrite())
 			{
-				//std::cout << "Eventloop 6" << std::endl;
 				int sent = conn.writeData();
 				if (sent < 0 || sent == 0)
 				{
@@ -272,11 +297,8 @@ void Served::runEventloop()
 					else
 						std::cout << "❌ Client " << cfd << " disconnected.hehehe" << std::endl;
 					close(cfd);
-					//std::map<int, ClientConnection>::iterator tmp = it;
 					
-					clients.erase(it);
-					
-					it = clients.begin();
+					it = clients.erase(it);
 					
 					closed = true;
 					break;
@@ -288,34 +310,7 @@ void Served::runEventloop()
 			// 	++it;
 			// }
 		}
-	
-		
-		//timeout control
-		
-		// auto now = std::chrono::steady_clock::now();//?
-		// std::cout << "in timeout " << std::endl;
-		// const int TIMEOUT_SECONDS = 60;
-		// for (auto it = clients.begin(); it != clients.end();) 
-		// {
-		// 	int cfd = it->first;
-		// 	ClientConnection &conn = it->second;
 
-		// 	auto elapsed = std::chrono::duration_cast<std::chrono::seconds >(now - conn.getLastActivity()).count();
-		// 	std::cout << "elapsed: " << elapsed << std::endl; 
-		// 	if ( elapsed > TIMEOUT_SECONDS)
-		// 	{
-		// 		std::cout<< "Client: " << cfd << " timeout." << std::endl;
-		// 		close (cfd);
-		// 		std::map<int, ClientConnection>::iterator tmp = it;
-		// 		it++;
-		// 		clients.erase(tmp);
-
-		// 	}
-		// 	else
-		// 	{
-		// 		++it;
-		// 	}
-		// }
 	}
 	std::cout << "Eventloop end" << std::endl;
 	
@@ -342,48 +337,4 @@ void Served::cleanup(void)
 	clients.clear();
 	serverSockets.clear();
 }
-	/*
-	client
-	*/
-	// int clientFd = -1;
-	// while (true)
-	// {
-	// 	for (size_t i = 0; i < serverSockets.size(); i++)
-	// 	{
-	// 		struct sockaddr_in clientAddr;
-	// 		socklen_t clientLen = sizeof(clientAddr);
-	// 		int clientFd = accept(serverSockets[i], (struct sockaddr*)&clientAddr, &clientLen);
-
-	// 		if (clientFd >= 0)
-	// 		{
-	// 			std::cout << "📡 Connection received on port " << servers[i].port << std::endl;
-
-	// 			/*
-	// 				Simple response
-	// 			*/ 
-	// 			std::string response =
-	// 				"HTTP/1.1 200 OK\r\n"
-	// 				"Content-Length: 6\r\n"
-	// 				"Content-Type: text/plain\r\n"
-	// 				"Connection: close\r\n"
-	// 				"\r\n"
-	// 				"Hello!";
-
-	// 			std::cout << "📡 Sending Response:\n" << response << std::endl;
-
-
-	// 			//send(clientFd, response.c_str(), response.size(), 0);
-
-	// 			ssize_t bytesSent = send(clientFd, response.c_str(), response.size(), 0);
-    //         	if (bytesSent == -1)
-    //             	std::cerr << "❌ Error sending response: " << std::endl;
-    //         	else
-	//                 std::cout << "✅ Successfully sent " << bytesSent << " bytes." << std::endl;
-
-	// 			close(clientFd);
-	// 		}
-	// 	}
-	// }
-
-
-
+	
