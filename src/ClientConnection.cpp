@@ -12,9 +12,9 @@ ClientConnection::ClientConnection(int cfd): fd(cfd), writeOffset(0),lastActivit
     "HTTP/1.1 200 OK\r\n"
     "Content-Length: 8\r\n"
     "Content-Type: text/plain\r\n"
-    "Connection: close\r\n";
-    // "\r\n"
-    // "fifahey!";
+    "Connection: close\r\n"
+    "\r\n"
+    "fifahey!";
     sendBuffer = response;
     
                 
