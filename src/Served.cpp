@@ -146,7 +146,7 @@ void Served::runEventloop()
 		}
 		
 		///test///
-		std::cout << "&& connected clients: ";
+		std::cout << "&& connected clients: &&\n";
 		for (auto it = clients.begin(); it != clients.end(); ++it) {
 			std::cout << it->first << " ";
 		}
@@ -166,7 +166,7 @@ void Served::runEventloop()
 		
 
 		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
-		std::cout << "readycount: " << readycount << std::endl;
+		//std::cout << "readycount: " << readycount << std::endl;
 		if (readycount < 0)
 		{
 			std::cerr<< "Error: select()" << std::endl;
@@ -181,9 +181,8 @@ void Served::runEventloop()
 		}
 		
 		//timeout control
-		std::cout << "in timeout " << std::endl;
 		auto now = std::chrono::steady_clock::now();
-		const int TIMEOUT_SECONDS = 30;
+		const int TIMEOUT_SECONDS = 60;
 		for (auto it = clients.begin(); it != clients.end();) 
 		{
 			int cfd = it->first;
@@ -193,8 +192,6 @@ void Served::runEventloop()
 			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
 			if ( duration > TIMEOUT_SECONDS)
 			{
-				
-				
 				std::cout<< "Client: " << cfd << " timeout." << std::endl;
 				close (cfd);
 				it = clients.erase(it);
@@ -202,7 +199,6 @@ void Served::runEventloop()
 			}
 			else
 			{
-				std::cout << "[timeout check] ++" << std::endl;
 				++it;
 			}
 		}
@@ -304,11 +300,6 @@ void Served::runEventloop()
 					break;
 				}
 			}
-	
-			// if (closed == false)
-			// {
-			// 	++it;
-			// }
 		}
 
 	}
