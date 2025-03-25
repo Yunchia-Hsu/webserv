@@ -128,3 +128,34 @@ int Utils::content_len_int(const std::string& input) {
 	}
 	return result;
 }
+
+void Utils::removeComments(std::string &line)
+{
+	line = std::regex_replace(line, std::regex("#.*$"), "");
+}
+
+std::string Utils::leftWspcTrim(std::string string)
+{
+	const char *ws = " \t\n\r\f\v";
+	string.erase(0, string.find_first_not_of(ws));
+	return string;
+}
+
+std::string Utils::rightWspcTrim(std::string string)
+{
+	const char *ws = " \t\n\r\f\v";
+	string.erase(string.find_last_not_of(ws) + 1);
+	return string;
+}
+
+std::string Utils::WspcTrim(std::string string)
+{
+	return leftWspcTrim(rightWspcTrim(string));
+}
+
+void Utils::skipEmptyLines(std::ifstream &configFile, std::string &line)
+{
+	while ((std::getline(configFile, line)) &&
+	       (removeComments(line), WspcTrim(line).empty()))
+		;
+}

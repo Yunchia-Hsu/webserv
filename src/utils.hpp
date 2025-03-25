@@ -5,6 +5,11 @@
 #include <cstring>
 #include <ctime>
 #include <stdexcept>
+#include <string>
+#include <fstream>
+#include <regex>
+#include <sys/stat.h>
+#include <filesystem>
 
 enum {
 	STATUS_OK = 200,
@@ -35,6 +40,19 @@ enum { METHOD_GET, METHOD_POST, METHOD_DELETE };
 extern std::unordered_map<int, std::string> code_map;
 extern std::unordered_map<std::string, std::string> mime_map;
 
+template <class T> T stringToType(std::string str)
+{
+	std::istringstream iss(str);
+	T result;
+	char remain;
+	if (!(iss >> result) || iss >> remain)
+	{
+	    throw std::runtime_error("stringToType: Failed to cast string to given type T!");
+	}
+	return result;
+
+}
+
 class Utils {
     public:
 	static int decode_hex(const char *s, int *out_len);
@@ -47,4 +65,10 @@ class Utils {
 				       std::string after);
 	static std::string trim_start(std::string &str, const std::string &needle);
 	static int content_len_int(const std::string& input);
+
+	static void Utils::removeComments(std::string &line);
+	static std::string Utils::WspcTrim(std::string string);
+	static void Utils::skipEmptyLines(std::ifstream &configFile, std::string &line);
+	static std::string Utils::leftWspcTrim(std::string string);
+	static std::string Utils::rightWspcTrim(std::string string);
 };
