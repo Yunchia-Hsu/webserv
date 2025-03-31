@@ -15,7 +15,9 @@ ClientConnection::ClientConnection(int cfd): fd(cfd), writeOffset(0),lastActivit
     "Connection: close\r\n"
     "\r\n"
     "fifahey!";
-    sendBuffer = response;          
+    sendBuffer = response;
+    
+                
 }
 
 bool ClientConnection::needWrite ()
