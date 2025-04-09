@@ -2,11 +2,11 @@
 #include "ClientConnection.hpp"
 
 
-ClientConnection::ClientConnection(int cfd): fd(cfd), writeOffset(0),lastActivity(std::chrono::steady_clock::now())  // ✅ 初始化
+ClientConnection::ClientConnection(int cfd, int port): fd(cfd), writeOffset(0),lastActivity(std::chrono::steady_clock::now()), serverPort(port) // ✅ 初始化
 {
     //for test
     // writeBuffer = "Hello from server!   for test\n";
-    writeBuffer = "init wirte buffer";
+    writeBuffer = "hi from wrte buffer";
     sendBuffer = "";
     std::string response =
     "HTTP/1.1 200 OK\r\n"
