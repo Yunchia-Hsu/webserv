@@ -18,7 +18,8 @@
 #include <cerrno>    // for errno
 
 #include <chrono>
-#include "Served.hpp"
+
+class Served;
 
 enum ConnectionState
 {
@@ -35,27 +36,28 @@ class ClientConnection
 private:
     int fd;
     std::string writeBuffer; // 儲存待傳送給客戶端的資料
-    std::string sendBuffer;
+    std::string sendBuffer; //
     size_t writeOffset = 0;// 已經送了多少
     std::chrono::time_point<std::chrono::steady_clock> lastActivity;
 	
 
     ConnectionState state;
+	int serverPort;  // 新增：用於存儲服務器端口
 
 public:
   
     int getFd() const {return fd;}
     bool needWrite ();
     bool needRead ();
-    ClientConnection(int cfd);
+    ClientConnection(int cfd, int port);
     int readData(); //要進一步確保HTTP request 是完整的
    int checkend(std::string str, std::string end); //return 0 done, 1 not done
     void appendToWriteBuffer(const std::string &data);
     int writeData();
-
+	int getServerPort() const { return serverPort; }
     //lastactivity getter
 	std::chrono::steady_clock::time_point getLastActivity() const;
-   
+	
 	void clean();
 
 };

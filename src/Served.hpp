@@ -32,6 +32,10 @@ class Served
 		Served(const std::vector<ServerConf>& parsedServers);
 		void start();
 		
+		int getport(int i)
+		{
+			return servers[i].port;
+		}
 		//void runEventloop(std::vector<int> &serverSockets);
 		void runEventloop();//?
 

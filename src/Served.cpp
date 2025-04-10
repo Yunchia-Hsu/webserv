@@ -1,5 +1,4 @@
 
-
 #include "Served.hpp"
 #include <fcntl.h>    // For fcntl(), F_GETFL, F_SETFL, O_NONBLOCK  
 Served::Served(const std::vector<ServerConf>& parsedServers) : servers(parsedServers) {}
@@ -147,8 +146,12 @@ void Served::runEventloop()
 		
 		///test///
 		std::cout << "&& connected clients: &&\n";
+
+	
 		for (auto it = clients.begin(); it != clients.end(); ++it) {
 			std::cout << it->first << " ";
+			
+			
 		}
 		//std::cout << std::endl;
 		// if (clients.empty())
@@ -208,7 +211,7 @@ void Served::runEventloop()
 			continue;
 		}
 		//5.handle new clients (accept)、
-		for (int i = 0; i < serverSockets.size(); i++)
+		for (int i = 0; i < serverSockets.size(); i++)//why to use  serverSockets  to handle new clients
 		{
 			
 			int sfd = serverSockets[i];
@@ -232,10 +235,11 @@ void Served::runEventloop()
 					{
 						std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
 
-						ClientConnection conn (clientFd);
+						ClientConnection conn (clientFd, servers[i].port);// init client
+						//ClientConnection conn (clientFd);
 						conn.appendToWriteBuffer("Hello from server!  here there (Test Message)\n");
 						//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
-						clients.insert(std::make_pair(clientFd, ClientConnection(clientFd)));
+						clients.insert(std::make_pair(clientFd, conn));
 						///test///
 						std::cout << "Current connected clients: ";
 						for (auto it = clients.begin(); it != clients.end(); ++it) {
@@ -251,7 +255,7 @@ void Served::runEventloop()
 		for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			
-			std::cout << "-1" << std::endl;
+			
 			int cfd = it->first;
 			ClientConnection &conn = it->second;//?
 			bool closed = false;
@@ -265,7 +269,7 @@ void Served::runEventloop()
 				{
 					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
 					close(cfd);
-					clients.erase(it);
+					it = clients.erase(it);
 					
 					FD_CLR(cfd, &readSet);
 					it = clients.begin();
@@ -275,6 +279,11 @@ void Served::runEventloop()
 				}
 				else if (n == 0) //接收完畢
 				{
+					// std::cout<<"ip:port:" <<conn.get_server()->servers[0].host<<":"<<conn.get_server()->servers[0].port<<std::endl;
+                    // std::cout<<"ip:port:" <<conn.get_server()->servers[1].host<<":"<<conn.get_server()->servers[1].port<<std::endl;
+                    // std::cout<<"ip:port:" <<conn.get_server()->servers[2].host<<":"<< conn.get_server()->servers[2].port<<std::endl;
+					std::cout << "Client " << cfd << " connected on server port: " << conn.getServerPort() << std::endl;
+					
 					FD_CLR(cfd, &readSet);
 					FD_SET(cfd, &writeSet);
 				}
