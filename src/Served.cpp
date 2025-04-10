@@ -95,6 +95,50 @@ void Served::start()//將不同port存入不同的vector
 
 }
 
+void Served::set_config(ClientConnection  client)
+{
+	std::cout<<"ip:port:" <<client.get_server()->servers[0].host<<":"<<client.get_server()->servers[0].port<<std::endl;
+	std::cout<<"ip:port:" <<client.get_server()->servers[1].host<<":"<<client.get_server()->servers[1].port<<std::endl;
+	std::cout<<"ip:port:" <<client.get_server()->servers[2].host<<":"<< client.get_server()->servers[2].port<<std::endl;
+	//if (req->host_matched || client->conn_type != CONN_REGULAR) return;
+
+	//  0.0.0.0:8080
+	//  0.0.0.0:8081
+	//  0.0.0.0:808
+	 
+	// req->conf = _socketFdToSockets[client->socket]->getServers().front();
+	// 127.0.0.1:8080 
+	// create_socket();
+	// aaaa[127.0.0.1:8080].pushback(route);
+	// 127.0.0.1:8080
+	// _socketFdToSockets[127.0.0.1:8080].pushback 127.0.0.1:8080.route.push_back 
+	// 127.0.0.1:8080      socket[s]- std::vertor<serverconfiig>
+	// // location aaa      
+	// // 127.0.0.1:8080
+	// // location bbb
+	// if (req->_headers.count("host") == 0)
+	// 	return;
+	// const std::string host = req->_headers["host"];
+	// std::cout << "hosts state: " << host << std::endl;
+
+	// int port = _socketToPort[client->socket];
+	// std::vector <std::shared_ptr<ServerConfig>> configs = matching_configs(port);
+
+	// for (const auto &c : configs)
+	// {
+	// 	for (const auto &name : c->getNames())
+	// 	{
+	// 		std::cout << "name " << name << std::endl;
+	// 		if (host == name)
+	// 		{
+	// 			std::cerr << "matched host header: " << name << std::endl;
+	// 			req->host_matched = true;
+	// 			req->conf = c;
+	// 			return;
+	// 		}
+	// 	}
+	// }
+}
 
 // void WebServed::runEventloop(std::vector<int> &serverSockets)
 void Served::runEventloop()
@@ -113,7 +157,7 @@ void Served::runEventloop()
 		struct timeval timeout;
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
-		int ret = 0;
+
 
 		//2.將「所有 server socket」加入 readSet，以便檢查是否有新連線要 accept()。
 		for (size_t i = 0; i < serverSockets.size(); i++)
@@ -169,7 +213,7 @@ void Served::runEventloop()
 		
 
 		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
-		//std::cout << "readycount: " << readycount << std::endl;
+		// std::cout << "readycount: " << readycount << std::endl;
 		if (readycount < 0)
 		{
 			std::cerr<< "Error: select()" << std::endl;
@@ -185,7 +229,7 @@ void Served::runEventloop()
 		
 		//timeout control
 		auto now = std::chrono::steady_clock::now();
-		const int TIMEOUT_SECONDS = 60;
+		// const int TIMEOUT_SECONDS = 60;
 		for (auto it = clients.begin(); it != clients.end();) 
 		{
 			int cfd = it->first;
@@ -193,7 +237,7 @@ void Served::runEventloop()
 		
 			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActivity()).count();
 			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
-			if ( duration > TIMEOUT_SECONDS)
+			if ( duration > 60)
 			{
 				std::cout<< "Client: " << cfd << " timeout." << std::endl;
 				close (cfd);
@@ -211,7 +255,7 @@ void Served::runEventloop()
 			continue;
 		}
 		//5.handle new clients (accept)、
-		for (int i = 0; i < serverSockets.size(); i++)//why to use  serverSockets  to handle new clients
+		for (unsigned int i = 0; i < serverSockets.size(); i++)
 		{
 			
 			int sfd = serverSockets[i];
@@ -283,6 +327,16 @@ void Served::runEventloop()
                     // std::cout<<"ip:port:" <<conn.get_server()->servers[1].host<<":"<<conn.get_server()->servers[1].port<<std::endl;
                     // std::cout<<"ip:port:" <<conn.get_server()->servers[2].host<<":"<< conn.get_server()->servers[2].port<<std::endl;
 					std::cout << "Client " << cfd << " connected on server port: " << conn.getServerPort() << std::endl;
+
+					
+					//State state = conn.parse(State::STATUSLINE,conn.getwritebubffer(),n);
+					//routeconfig
+					set_config(conn);
+					// if (state == State::OK || state == State::ERROR)
+					// {
+					// 	std::cout<< static_cast<int>(state)<< std::endl;
+					// 	std::cout<< "B______________________________-:"<< conn._headers["host"]<<std::endl;
+					// 	}
 					
 					FD_CLR(cfd, &readSet);
 					FD_SET(cfd, &writeSet);
@@ -315,7 +369,6 @@ void Served::runEventloop()
 	std::cout << "Eventloop end" << std::endl;
 	
 }
-
 
 
 

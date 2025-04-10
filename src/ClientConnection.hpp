@@ -3,6 +3,7 @@
 
 
 #include "confiParser.hpp"
+#include "request.hpp"
 #include <iostream>
 #include <vector>
 #include <map>
@@ -20,6 +21,8 @@
 #include <chrono>
 
 class Served;
+#include "Served.hpp"
+#include "utils.hpp"
 
 enum ConnectionState
 {
@@ -30,6 +33,48 @@ enum ConnectionState
     DONE
 };
 
+#include <regex>
+#include <string>
+#include <unordered_map>
+
+#include "utils.hpp"
+#include "confiParser.hpp"
+
+// #define URI_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;="
+// #define FIELD_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+// enum {
+// 	BODY_TYPE_NORMAL,
+// 	BODY_TYPE_CHUNKED,
+// 	BODY_TYPE_MULTIPART,
+// };
+
+// enum class State {
+//     OK,
+// 	ERROR,
+// 	STATUSLINE,
+// 	HEADER,
+//     BODY,
+// 	CHUNKED,
+// 	MULTIPART,
+//     CGIHEADER,
+// 	CGIBODY,
+//     PARTIALSTATUS,
+// 	PARTIALHEADER,
+// 	PARTIALCHUNKED,
+// 	PARTIALCGI,
+// 	PARTIALBODY,
+// };
+
+// struct Part
+// {
+//     std::string data;
+// 	std::string name;
+// 	std::string filename;
+// 	std::string content_type;
+// };
+
+class Served;
 
 class ClientConnection
 {
@@ -43,9 +88,32 @@ private:
 
     ConnectionState state;
 	int serverPort;  // 新增：用於存儲服務器端口
+    // ConnectionState state;
+
+    Served *serve;
+
+    size_t _bytes_read;
+    size_t _total_read;
+    std::string _buffer;
+
+    bool _cgi;
+
+    State parse_status_line(void);
+    State parse_header(void);
+    bool parse_header_field(size_t pos);
+    State parse_body(void);
+    State parse_body_cgi(void);
+    State parse_chunked(void);
+    void parse_multipart(void);
+
+    State parse_header_cgi(void);
 
 public:
-  
+    
+    std::string getwritebubffer()
+    {
+        return writeBuffer;
+    }
     int getFd() const {return fd;}
     bool needWrite ();
     bool needRead ();
@@ -55,10 +123,45 @@ public:
     void appendToWriteBuffer(const std::string &data);
     int writeData();
 	int getServerPort() const { return serverPort; }
+    std::string get_buffer()
+    {
+        return _buffer;
+    }
+
+    Served *get_server()
+    {
+        return serve;
+    }
     //lastactivity getter
 	std::chrono::steady_clock::time_point getLastActivity() const;
 	
 	void clean();
 
+    void cleanup_child();
+
+    State _state;
+    int _method;
+    int parse_error;
+    std::string _uri;
+    std::string _version;
+    std::string _method_str;
+    std::string _query_string;
+    std::map<std::string, std::string> params;
+    std::map<std::string, std::string> _headers;
+
+    size_t _content_len;
+    std::string _body;
+    int _body_type;
+
+    bool host_matched;
+    std::vector<Part> parts;
+    std::shared_ptr<ConfiParser> conf;
+
+    ClientConnection();
+    ClientConnection(bool cgi);
+
+    State parse(State s_state,  std::string data, size_t size);
+    void check_body_limit(void);
+    static bool is_method_allowed(std::vector<std::string> allowed, std::string method);
 };
 #endif

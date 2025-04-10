@@ -62,6 +62,9 @@
 		"text_encoding": "cpp",
 		"bitset": "cpp",
 		"regex": "cpp",
-		"filesystem": "cpp"
-	}
+		"filesystem": "cpp",
+		"codecvt": "cpp",
+		"csignal": "cpp"
+	},
+	"C_Cpp.errorSquiggles": "enabled"
 }

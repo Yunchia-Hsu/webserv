@@ -1,6 +1,6 @@
 #include "request.hpp"
 
-std::unordered_map<std::string, int> method_map = { { "GET", METHOD_GET },
+std::unordered_map<std::string, int> met_map = { { "GET", METHOD_GET },
 						    { "POST", METHOD_POST },
 						    { "DELETE", METHOD_DELETE } };
 
@@ -105,7 +105,7 @@ State Request::parse_status_line(void)
 	_uri = Utils::url_decode(m[2]);
 	_version = m[3];
 
-	if (method_map.count(_method_str) == 0)
+	if (met_map.count(_method_str) == 0)
 	{
 		this->parse_error = 501;
 		return State::ERROR;
@@ -122,7 +122,7 @@ State Request::parse_status_line(void)
 		_query_string = _uri.substr(pos_q + 1, _uri.size());
 		_uri.erase(pos_q, _uri.size());
 	}
-	_method = method_map[_method_str];
+	_method = met_map[_method_str];
 
 	_buffer.erase(0, pos + 2);
 	return State::HEADER;

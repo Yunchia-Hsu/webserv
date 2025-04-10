@@ -19,23 +19,6 @@ enum {
 	BODY_TYPE_MULTIPART,
 };
 
-enum class State {
-    OK,
-	ERROR,
-	STATUSLINE,
-	HEADER,
-    BODY,
-	CHUNKED,
-	MULTIPART,
-    CGIHEADER,
-	CGIBODY,
-    PARTIALSTATUS,
-	PARTIALHEADER,
-	PARTIALCHUNKED,
-	PARTIALCGI,
-	PARTIALBODY,
-};
-
 struct Part
 {
     std::string data;
@@ -45,6 +28,8 @@ struct Part
 };
 
 // class ClientConnection;
+
+class ConfiParser;
 
 class Request {
     public:
@@ -68,6 +53,7 @@ class Request {
 
         Request();
         Request(bool cgi);
+        ~Request();
 
         State parse(State s_state, char *data, size_t size);
         void check_body_limit(void);

@@ -1,4 +1,4 @@
-#include <response.hpp>
+#include "response.hpp"
 
 Response::~Response()
 {
@@ -36,7 +36,7 @@ Response::Response(std::shared_ptr<ClientConnection> client, std::shared_ptr<Req
 		return;
 	}
 
-	if (_location->_session) _handleCookies();
+	// if (_location->_session) _handleCookies();
 
 	if (_request->_method == METHOD_GET)
 		_status_code = handle_get();
@@ -80,8 +80,8 @@ void Response::finish_response(void)
 
 int Response::has_errors(void)
 {
-	if (_request->parser_error)
-		return _request->parser_error;
+	if (_request->parse_error)
+		return _request->parse_error;
 
 	_location = find_location();
 	if (_location == nullptr)
@@ -111,7 +111,7 @@ void Response::create_response(int status)
 	set_error_page(status);
 
 	const std::string &bs = _body.str();
-	Logger::log_request(std::weak_ptr<Request>(_request), bs.size(), status);
+	// Logger::log_request(std::weak_ptr<Request>(_request), bs.size(), status);
 
 	buffer << "HTTP/1.1 " << status << " " << code_map[status] << CRLF;
 	buffer << "Content-Length: " << bs.size() << CRLF;
@@ -120,7 +120,7 @@ void Response::create_response(int status)
 		buffer << hdr.first << ": " << hdr.second << CRLF;
 	}
 	buffer << "Connection: close" << CRLF;
-	buffer << "Date: " << Str::date_str_now() << CRLF;
+	buffer << "Date: " << Utils::date_str_now() << CRLF;
 	buffer << "Server: " << SERVER_NAME << CRLF;
 	if (_location && !_location->_redirectPath.empty())
 	{
@@ -216,8 +216,8 @@ int Response::handle_delete(void)
 
 void Response::finish_cgi(std::shared_ptr<Request> req)
 {
-	if (req->parser_error) {
-		_status_code = req->parser_error;
+	if (req->parse_error) {
+		_status_code = req->parse_error;
 		create_response(_status_code);
 		return;
 	}
@@ -232,7 +232,7 @@ void Response::finish_cgi(std::shared_ptr<Request> req)
 	create_response(_status_code);
 }
 
-bool Response::init_cgi(std::shared_ptr<Client> client)
+bool Response::init_cgi(std::shared_ptr<ClientConnection> client)
 {
 	if (_request->_method == METHOD_DELETE)
 	{
@@ -246,7 +246,7 @@ bool Response::init_cgi(std::shared_ptr<Client> client)
 		_status_code = STATUS_INTERNAL_ERROR;
 		return false;
 	}
-	client->conn_type = CONN_WAIT_CGI;
+	// client->conn_type = CONN_WAIT_CGI;
 	return true;
 }
 
@@ -267,17 +267,17 @@ void Response::set_error_page(int code)
 	*/
 	_additional_headers["Content-Type"] = "text/html";
 
-	if (!_request->conf || _request->conf->_errorPages.count(code) == 0)
-	{
-		generate_error_page(code);
-		return;
-	}
+	// if (!_request->conf || _request->conf->_errorPages.count(code) == 0)           //will check it later/////////////
+	// {
+	// 	generate_error_page(code);
+	// 	return;
+	// }
 
-	std::string page_path = _request->conf->_errorPages[code];
-	if (!Io::read_file(page_path, _body))
-	{
-		generate_error_page(code);
-	}
+	// std::string page_path = _request->conf->_errorPages[code];
+	// if (!Io::read_file(page_path, _body))
+	// {
+	// 	generate_error_page(code);
+	// }
 }
 
 void Response::generate_error_page(int code)
@@ -348,7 +348,7 @@ bool Response::directory_index(std::string path)
 			href += "/";
 		_body << "<tbody>";
 		_body << "<tr><td><a href=\"" << href << "\">" << href << "</td>";
-		_body << "<td align=\"right\">" << Str::time_to_str(sb.st_mtime) << "</td>";
+		_body << "<td align=\"right\">" << Utils::time_to_str(sb.st_mtime) << "</td>";
 		_body << "<td align=\"right\">" << sb.st_size << "</td></tr>";
 		_body << "</tbody>";
 	}

@@ -18,6 +18,8 @@
 #include <cstring>   // for memset
 #include <cerrno>    // for errno
 
+#include "request.hpp"
+
 
 class ClientConnection;
 
@@ -36,6 +38,7 @@ class Served
 		{
 			return servers[i].port;
 		}
+		void set_config(ClientConnection  client);
 		//void runEventloop(std::vector<int> &serverSockets);
 		void runEventloop();//?
 

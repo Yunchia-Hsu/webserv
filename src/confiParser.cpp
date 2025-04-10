@@ -245,6 +245,9 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			*/
 			parseRouteStuff(file, route);
 			server.routes.push_back(route.location);
+			std::shared_ptr<Location> loc = std::make_shared<Location>();
+			loc->_path = route.location;
+			_locations.push_back(loc);
 		}
 
 		else if (keyWord == "methods" || keyWord == "allow_methods")
@@ -414,4 +417,8 @@ void ConfiParser::testPrinter() const
         std::cout << std::endl;
     }
 	std::cout << "File is saved and dandy!" << std::endl;
+}
+
+std::vector<std::shared_ptr<Location>>	&ConfiParser::getLocations() {
+	return _locations;
 }

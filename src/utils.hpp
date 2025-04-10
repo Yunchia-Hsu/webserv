@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <sstream>
 #include <cstring>
 #include <ctime>
 #include <stdexcept>
@@ -9,7 +10,12 @@
 #include <fstream>
 #include <regex>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <filesystem>
+#include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <csignal>
 
 enum {
 	STATUS_OK = 200,
@@ -20,6 +26,23 @@ enum {
 	STATUS_METHOD_NOT_ALLOWED = 405,
 	STATUS_TOO_LARGE = 413,
 	STATUS_INTERNAL_ERROR= 500,
+};
+
+enum class State {
+    OK,
+	ERROR,
+	STATUSLINE,
+	HEADER,
+    BODY,
+	CHUNKED,
+	MULTIPART,
+    CGIHEADER,
+	CGIBODY,
+    PARTIALSTATUS,
+	PARTIALHEADER,
+	PARTIALCHUNKED,
+	PARTIALCGI,
+	PARTIALBODY,
 };
 
 enum { METHOD_GET, METHOD_POST, METHOD_DELETE };
@@ -66,9 +89,9 @@ class Utils {
 	static std::string trim_start(std::string &str, const std::string &needle);
 	static int content_len_int(const std::string& input);
 
-	static void Utils::removeComments(std::string &line);
-	static std::string Utils::WspcTrim(std::string string);
-	static void Utils::skipEmptyLines(std::ifstream &configFile, std::string &line);
-	static std::string Utils::leftWspcTrim(std::string string);
-	static std::string Utils::rightWspcTrim(std::string string);
+	static void removeComments(std::string &line);
+	static std::string WspcTrim(std::string string);
+	static void skipEmptyLines(std::ifstream &configFile, std::string &line);
+	static std::string leftWspcTrim(std::string string);
+	static std::string rightWspcTrim(std::string string);
 };
