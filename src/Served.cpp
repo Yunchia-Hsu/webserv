@@ -58,7 +58,7 @@ void Served::start()//將不同port存入不同的vector
             continue;
         }
 
-
+		
 
 		struct sockaddr_in server_addr;
 		std::memset(&server_addr, 0, sizeof(server_addr));
@@ -83,8 +83,10 @@ void Served::start()//將不同port存入不同的vector
 		}
 		std::cout << "✅ Server " << i + 1 << " is listening on port " << serverPort << std::endl;
 		serverSockets.push_back(serverFd);
+		_socketFdToServerConf[serverFd] = std::make_shared<ServerConf>(servers[i]);
+		_socketToPort[serverFd] = serverPort;
 
-		if (serverSockets.empty())
+		if (serverSockets.empty()) 
 		{
 			std::cerr << "❌ Error: no server sockets created" << std::endl;
 			return ;
@@ -95,49 +97,50 @@ void Served::start()//將不同port存入不同的vector
 
 }
 
-void Served::set_config(ClientConnection  client)
-{
-	std::cout<<"ip:port:" <<client.get_server()->servers[0].host<<":"<<client.get_server()->servers[0].port<<std::endl;
-	std::cout<<"ip:port:" <<client.get_server()->servers[1].host<<":"<<client.get_server()->servers[1].port<<std::endl;
-	std::cout<<"ip:port:" <<client.get_server()->servers[2].host<<":"<< client.get_server()->servers[2].port<<std::endl;
-	//if (req->host_matched || client->conn_type != CONN_REGULAR) return;
+std::vector<std::shared_ptr<ServerConf>> Served::matching_configs(int port){
+	std::vector<std::shared_ptr<ServerConf>> configs;
 
-	//  0.0.0.0:8080
-	//  0.0.0.0:8081
-	//  0.0.0.0:808
-	 
-	// req->conf = _socketFdToSockets[client->socket]->getServers().front();
-	// 127.0.0.1:8080 
-	// create_socket();
-	// aaaa[127.0.0.1:8080].pushback(route);
-	// 127.0.0.1:8080
-	// _socketFdToSockets[127.0.0.1:8080].pushback 127.0.0.1:8080.route.push_back 
-	// 127.0.0.1:8080      socket[s]- std::vertor<serverconfiig>
-	// // location aaa      
-	// // 127.0.0.1:8080
-	// // location bbb
-	// if (req->_headers.count("host") == 0)
-	// 	return;
-	// const std::string host = req->_headers["host"];
-	// std::cout << "hosts state: " << host << std::endl;
+	for (auto const &x : _socketFdToServerConf){
+		std::cout << "xxxxxxxxxxxxxxxx:" << x.first << "PORT: " << port << std::endl;
+		configs.push_back(NULL);
+	}
+	return configs;
+}
 
-	// int port = _socketToPort[client->socket];
-	// std::vector <std::shared_ptr<ServerConfig>> configs = matching_configs(port);
+void Served::set_config(ClientConnection  client){
+	// std::cout<<"ip:port:" <<client.get_server()->servers[0].host<<":"<<client.get_server()->servers[0].port<<std::endl;
+	// std::cout<<"ip:port:" <<client.get_server()->servers[1].host<<":"<<client.get_server()->servers[1].port<<std::endl;
+	// std::cout<<"ip:port:" <<client.get_server()->servers[2].host<<":"<< client.get_server()->servers[2].port<<std::endl;
+	if (client.host_matched || client.conn_type != CONN_REGULAR)
+		return ;
+	// client.conf
+	if  (client._headers.count("host") == 0)
+		return ;
+	const std::string host = client._headers["host"];
+	
+	int port = client.getServerPort();
+	std::cout << "port: " << port << std::endl;
+	std::vector <std::shared_ptr<ServerConf>> configs = matching_configs(port);
+}
 
-	// for (const auto &c : configs)
-	// {
-	// 	for (const auto &name : c->getNames())
-	// 	{
-	// 		std::cout << "name " << name << std::endl;
-	// 		if (host == name)
-	// 		{
-	// 			std::cerr << "matched host header: " << name << std::endl;
-	// 			req->host_matched = true;
-	// 			req->conf = c;
-	// 			return;
-	// 		}
-	// 	}
-	// }
+const char* sstate_to_string(State s) {
+    switch (s) {
+        case State::OK: return "OK";
+        case State::ERROR: return "ERROR";
+        case State::STATUSLINE: return "STATUSLINE";
+        case State::HEADER: return "HEADER";
+        case State::BODY: return "BODY";
+        case State::CHUNKED: return "CHUNKED";
+        case State::MULTIPART: return "MULTIPART";
+        case State::CGIHEADER: return "CGIHEADER";
+        case State::CGIBODY: return "CGIBODY";
+        case State::PARTIALSTATUS: return "PARTIALSTATUS";
+        case State::PARTIALHEADER: return "PARTIALHEADER";
+        case State::PARTIALCHUNKED: return "PARTIALCHUNKED";
+        case State::PARTIALCGI: return "PARTIALCGI";
+        case State::PARTIALBODY: return "PARTIALBODY";
+        default: return "UNKNOWN";
+    }
 }
 
 // void WebServed::runEventloop(std::vector<int> &serverSockets)
@@ -237,7 +240,7 @@ void Served::runEventloop()
 		
 			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActivity()).count();
 			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
-			if ( duration > 60)
+			if ( duration > 6000)
 			{
 				std::cout<< "Client: " << cfd << " timeout." << std::endl;
 				close (cfd);
@@ -279,9 +282,9 @@ void Served::runEventloop()
 					{
 						std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
 
-						ClientConnection conn (clientFd, servers[i].port);// init client
+						ClientConnection conn (clientFd, servers[i].port, this);// init client
 						//ClientConnection conn (clientFd);
-						conn.appendToWriteBuffer("Hello from server!  here there (Test Message)\n");
+						// conn.appendToWriteBuffer("Hello from server!  here there (Test Message)\n");
 						//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
 						clients.insert(std::make_pair(clientFd, conn));
 						///test///
@@ -329,7 +332,8 @@ void Served::runEventloop()
 					std::cout << "Client " << cfd << " connected on server port: " << conn.getServerPort() << std::endl;
 
 					
-					//State state = conn.parse(State::STATUSLINE,conn.getwritebubffer(),n);
+					State state = conn.parse(State::STATUSLINE,conn.getwritebubffer(),n);
+					std::cout << sstate_to_string(state) << std::endl;
 					//routeconfig
 					set_config(conn);
 					// if (state == State::OK || state == State::ERROR)

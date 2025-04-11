@@ -19,7 +19,7 @@
 #include <cerrno>    // for errno
 
 #include "request.hpp"
-
+#include "socketWrapper.hpp"
 
 class ClientConnection;
 
@@ -29,6 +29,10 @@ class Served
 		std::vector<ServerConf> servers;
 		std::vector<int> serverSockets;
 		std::map<int, ClientConnection> clients;//_sockets
+
+		std::map<int, std::shared_ptr<ServerConf>> _socketFdToServerConf;
+		std::map<std::string, std::shared_ptr<SocketWrapper>> _portsToSockets;
+		std::map<int, int> _socketToPort;
 
 	public:
 		Served(const std::vector<ServerConf>& parsedServers);
@@ -43,6 +47,8 @@ class Served
 		void runEventloop();//?
 
 		void cleanup(void);
+
+		std::vector<std::shared_ptr<ServerConf>> matching_configs(int port);
 };
 
 void	*ft_memcpy(void *dst, const void *src, size_t n);

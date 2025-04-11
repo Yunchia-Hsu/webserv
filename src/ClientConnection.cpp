@@ -2,11 +2,11 @@
 #include "ClientConnection.hpp"
 
 
-ClientConnection::ClientConnection(int cfd, int port): fd(cfd), writeOffset(0),lastActivity(std::chrono::steady_clock::now()), serverPort(port) // ✅ 初始化
+ClientConnection::ClientConnection(int cfd, int port, Served *serve): fd(cfd), writeOffset(0),lastActivity(std::chrono::steady_clock::now()), serverPort(port) // ✅ 初始化
 {
     //for test
     // writeBuffer = "Hello from server!   for test\n";
-    writeBuffer = "hi from wrte buffer";
+    writeBuffer = "";
     sendBuffer = "";
     std::string response =
     "HTTP/1.1 200 OK\r\n"
@@ -17,7 +17,42 @@ ClientConnection::ClientConnection(int cfd, int port): fd(cfd), writeOffset(0),l
     "fifahey!";
     sendBuffer = response;
     
-    this->serve = &serve;
+    this->serve = serve;
+	this->_bytes_read = 0;
+	this->parse_error = 0;
+	this->_state = State::STATUSLINE;
+	this->_content_len = 0;
+	this->_body_type = BODY_TYPE_NORMAL;
+	this->_cgi = false;
+	this->conf = nullptr;
+	this->_total_read = 0;
+	this->host_matched = false;
+	this->conn_type = CONN_REGULAR;
+}
+
+ClientConnection::ClientConnection(int cgi_fd, Served *serve): fd(cgi_fd), writeOffset(0),lastActivity(std::chrono::steady_clock::now()){
+	writeBuffer = "";
+    sendBuffer = "";
+    std::string response =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Length: 8\r\n"
+    "Content-Type: text/plain\r\n"
+    "Connection: close\r\n"
+    "\r\n"
+    "fifahey!";
+    sendBuffer = response;
+    
+    this->serve = serve;
+	this->_bytes_read = 0;
+	this->parse_error = 0;
+	this->_state = State::STATUSLINE;
+	this->_content_len = 0;
+	this->_body_type = BODY_TYPE_NORMAL;
+	this->_cgi = false;
+	this->conf = nullptr;
+	this->_total_read = 0;
+	this->host_matched = false;
+	this->conn_type = CONN_CGI;
 }
 
 bool ClientConnection::needWrite ()
@@ -98,7 +133,7 @@ int ClientConnection::readData() //要進一步確保HTTP request 是完整的
 				
 				std::string str = writeBuffer.substr(contentlenpos + 15, contentlenend - (contentlenpos + 15));
 
-				std::cout << "subbbbbbbbbbbbbbb" << std::endl;
+				std::cout << "subbbbbbbbbbbbbbb: " << str << std::endl;
 				size_t contentlen = atoi(str.c_str());
 				if (writeBuffer.size() >= headerend + 4 +  contentlen)
 				{
@@ -263,9 +298,9 @@ State ClientConnection::parse(State s_start, std::string data, size_t size)
 
 	if (_state < s_start)
 		_state = s_start;
+	std::cout << "string: " << data << "Current state: " << state_to_string(_state) << "s_state: " << state_to_string(s_start) << std::endl;
 	while (_state != State::OK && _state != State::ERROR)
 	{
-		std::cout << "Current state: " << state_to_string(_state) << std::endl;
 		switch (_state)
 		{
 		case State::PARTIALSTATUS:
@@ -317,7 +352,7 @@ static std::regex r(R"((\S+) (\S+) (\S+))");
 State ClientConnection::parse_status_line(void)
 {
 	
-	std::cout << "ppac state: "  << std::endl;
+	// std::cout << "ppac state: "  << std::endl;
 	if (_total_read >= MAX_HEADER_BYTES)
 	{
 		this->parse_error = STATUS_BAD_REQUEST;

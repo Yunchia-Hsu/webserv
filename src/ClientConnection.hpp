@@ -33,6 +33,12 @@ enum ConnectionState
     DONE
 };
 
+enum {
+	CONN_REGULAR,
+	CONN_WAIT_CGI,
+	CONN_CGI,
+};
+
 #include <regex>
 #include <string>
 #include <unordered_map>
@@ -86,7 +92,7 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> lastActivity;
 	
 
-    ConnectionState state;
+    // ConnectionState state;
 	int serverPort;  // 新增：用於存儲服務器端口
     // ConnectionState state;
 
@@ -117,7 +123,7 @@ public:
     int getFd() const {return fd;}
     bool needWrite ();
     bool needRead ();
-    ClientConnection(int cfd, int port);
+    ClientConnection(int cfd, int port, Served *serve);
     int readData(); //要進一步確保HTTP request 是完整的
    int checkend(std::string str, std::string end); //return 0 done, 1 not done
     void appendToWriteBuffer(const std::string &data);
@@ -141,6 +147,7 @@ public:
 
     State _state;
     int _method;
+    int conn_type;
     int parse_error;
     std::string _uri;
     std::string _version;
@@ -159,6 +166,7 @@ public:
 
     ClientConnection();
     ClientConnection(bool cgi);
+    ClientConnection(int cgi_fd, Served *serve);
 
     State parse(State s_state,  std::string data, size_t size);
     void check_body_limit(void);

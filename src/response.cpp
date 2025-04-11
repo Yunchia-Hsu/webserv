@@ -246,7 +246,7 @@ bool Response::init_cgi(std::shared_ptr<ClientConnection> client)
 		_status_code = STATUS_INTERNAL_ERROR;
 		return false;
 	}
-	// client->conn_type = CONN_WAIT_CGI;
+	client->conn_type = CONN_WAIT_CGI;
 	return true;
 }
 
