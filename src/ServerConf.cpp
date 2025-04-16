@@ -5,7 +5,11 @@ ServerConf::ServerConf() : port(80), maxBody(1048576), host("localhost")
 {
     this->serverNames.push_back("default");
 }
-
+ServerConf:: ServerConf(std::string& name)
+{
+    if (name.length() > 13)
+        this->serverNames.push_back(name.substr(13));
+}
 /*
     This is here for debugging
 */
@@ -15,7 +19,7 @@ void ServerConf::printConfig() const
     std::cout << "Server Configuration:" << std::endl;
     std::cout << "Port: " << port << std::endl;
     //std::cout << "Server Name: " << serverNames << std::endl;
-
+  
     if (!root.empty())
         std::cout << "Root Directory: " << root << std::endl;
 

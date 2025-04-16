@@ -36,12 +36,17 @@ void ConfiParser::parseFile(const std::string& filename)
 		if  (line.find("server") == 0) //if  (line.find("server {") == 0)
 		{
 			std::getline(file, line);
-			ServerConf server;
+			// std::cout<<"---------------------line:" << line <<std::endl;
+			ServerConf server(line);                                  // Maybe need to change it to shared point. Will check it later
 			parseServerStuff(file, server);
-		
+			
 			//std::pair<std::string, int> hostPort = {server.host, server.port};
 			std::pair<std::string, int> hostPort = std::make_pair(server.host, server.port);
-
+			// std::cout << "hhhhhhhhhhhhost port: " << hostPort.first << " and " << hostPort.second << std::endl;
+			std::string ip_and_port = hostPort.first + ":" + std::to_string(hostPort.second);
+			// std::cout << "nnnnnnnew ip_and_port: " << ip_and_port << std::endl;
+			std::shared_ptr<SocketWrapper> socket(new SocketWrapper(server));
+			portsToSockets.insert(std::make_pair(ip_and_port, socket));
 			if (usedPorts.find(hostPort) != usedPorts.end()) 
 			{
     			std::cerr << "⚠️ WARNING: You're trying to use the same port multiple times! " << std::endl;
@@ -109,6 +114,7 @@ size_t parseBody(const std::string& value)
 
 void ConfiParser::serverKeys(const std::string& keyWord, const std::string& value, ServerConf& server)
 {
+	// std::cout << "nnnnnnnnn-------------------------------------------------nnnnname: " << std::endl;
 	if (keyWord  == "listen")
 	{
 	
@@ -136,6 +142,7 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 		while (iss >> name)
 		{
 			server.serverNames.push_back(name);
+			// std::cout << "nnnnnnnnn-------------------------------------------------nnnnname: " << name << std::endl;
 		}
 	}
 	else if (keyWord == "root")
@@ -177,12 +184,15 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 {
 	std::string line;
+	int i =0;
 	while (std::getline(file, line))
 	{
 		/*
 			EXEPTION CHECKS:
 				check if line is empty, handle brackets, trim whitespace, remove  semicolons
 		*/
+		// std::cout<<"i----------------:"<<i<<":----------"<<line<<std::endl;
+		i++;
 		size_t start = line.find_first_not_of(" \t");
 		if (start != std::string::npos)
 			line = line.substr(start);
@@ -228,23 +238,31 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		{
 			RouteConf route;
 			route.location = value;
+			
 			/*
 				CHANGED!
 			*/
-			std::getline(file, line);
-			start = line.find_first_not_of("\t ");
-			if (start != std::string::npos)
-				line = line.substr(start);
-			if (line!= "{")
-			{
-				std::cerr << "ERROR: Missing '{' after location" << std::endl;
-				continue ;
-			}
-			/*
-				END OF CHANGE
-			*/
-			parseRouteStuff(file, route);
-			server.routes.push_back(route.location);
+			std::shared_ptr<Location> location(new Location(&server));
+			location->parseLocation(file, line);
+			// std::getline(file, line);
+			// start = line.find_first_not_of("\t ");
+			// if (start != std::string::npos)
+			// 	line = line.substr(start);
+			// if (line!= "{")
+			// {
+			// 	std::cerr << "ERROR: Missing '{' after location" << std::endl;
+			// 	continue ;
+			// }
+			// /*
+			// 	END OF CHANGE
+			// */
+			// parseRouteStuff(file, route);
+			// server.routes.push_back(route.location);
+			// std::shared_ptr<Location> location(new Location(&server));
+			// location->parseLocation(file, line);
+			// location->_path = route.location;
+			// loc->_serverRootPath = server.root;
+			_locations.push_back(location);
 		}
 
 		else if (keyWord == "methods" || keyWord == "allow_methods")
@@ -414,4 +432,8 @@ void ConfiParser::testPrinter() const
         std::cout << std::endl;
     }
 	std::cout << "File is saved and dandy!" << std::endl;
+}
+
+std::vector<std::shared_ptr<Location>>	&ConfiParser::getLocations() {
+	return _locations;
 }

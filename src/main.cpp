@@ -22,7 +22,7 @@ int main(int arc, char** arv)
         /*
             Try WebServed
         */
-        Served server(parser.getServers());
+        Served server(parser.getServers(), parser.portsToSockets, parser.getLocations());
 		std::vector<int> serverSockets;
         server.start();
 		//server.runEventloop(serverSockets);

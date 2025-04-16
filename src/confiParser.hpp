@@ -2,17 +2,20 @@
 #ifndef ConfiParser_HPP
 #define ConfiParser_HPP
 
-
 #include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <map>
 #include <sstream>
+#include <memory>
 
 #include "ServerConf.hpp"
 #include "RouteConf.hpp"
+#include "location.hpp"
+#include "socketWrapper.hpp"
 
+class Location;
 
 class ConfiParser
 {
@@ -21,8 +24,12 @@ class ConfiParser
         std::vector<std::string> confiLines;
         std::vector<ServerConf> servers;
         std::map<std::string, std::string> globalConfi;
+        std::vector<std::shared_ptr<Location> > _locations;
 
     public:
+
+        std::map<std::string, std::shared_ptr<SocketWrapper>> portsToSockets;
+
         ConfiParser();
         ~ConfiParser();
 
@@ -38,6 +45,7 @@ class ConfiParser
 
         void testPrinter() const;
 
+        std::vector<std::shared_ptr<Location>> &getLocations();
 };
 
 #endif
