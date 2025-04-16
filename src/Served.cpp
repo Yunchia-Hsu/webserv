@@ -1,7 +1,11 @@
 
 #include "Served.hpp"
 #include <fcntl.h>    // For fcntl(), F_GETFL, F_SETFL, O_NONBLOCK  
-Served::Served(const std::vector<ServerConf>& parsedServers) : servers(parsedServers) {}
+Served::Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets, std::vector<std::shared_ptr<Location>> locations) : servers(parsedServers) {
+	_portsToSockets = portToSockets;
+	_locations = locations;
+	// std::cout << "Here is the locations lallalaalalalalala:" << _locations[0];
+}
 
 
 
@@ -100,27 +104,77 @@ void Served::start()//將不同port存入不同的vector
 std::vector<std::shared_ptr<ServerConf>> Served::matching_configs(int port){
 	std::vector<std::shared_ptr<ServerConf>> configs;
 
-	for (auto const &x : _socketFdToServerConf){
+	for (auto const &x : _portsToSockets){
 		std::cout << "xxxxxxxxxxxxxxxx:" << x.first << "PORT: " << port << std::endl;
-		configs.push_back(NULL);
+		std::regex ptrn("(.*):(.*)");
+		std::smatch match_res;
+		std::regex_match(x.first, match_res, ptrn);
+	
+		if (_portsToSockets.count(x.first) && port == std::stoi(match_res[2]))
+		{
+			for (auto con : _portsToSockets[x.first]->getServers())
+				configs.push_back(con);
+		}
 	}
 	return configs;
 }
 
-void Served::set_config(ClientConnection  client){
+void Served::set_config(std::shared_ptr<ClientConnection>  client){
 	// std::cout<<"ip:port:" <<client.get_server()->servers[0].host<<":"<<client.get_server()->servers[0].port<<std::endl;
 	// std::cout<<"ip:port:" <<client.get_server()->servers[1].host<<":"<<client.get_server()->servers[1].port<<std::endl;
 	// std::cout<<"ip:port:" <<client.get_server()->servers[2].host<<":"<< client.get_server()->servers[2].port<<std::endl;
-	if (client.host_matched || client.conn_type != CONN_REGULAR)
+	if (client->host_matched || client->conn_type != CONN_REGULAR)
 		return ;
 	// client.conf
-	if  (client._headers.count("host") == 0)
+	if  (client->_headers.count("host") == 0)
 		return ;
-	const std::string host = client._headers["host"];
+	const std::string host = client->_headers["host"];
 	
-	int port = client.getServerPort();
+	int port = client->getServerPort();
 	std::cout << "port: " << port << std::endl;
 	std::vector <std::shared_ptr<ServerConf>> configs = matching_configs(port);
+	client->conf = configs.front();
+	std::cout << "hhhhhhhhhhhhhhhhhhhost name: " << host << std::endl;
+	std::cout << "--------------------------------- SIZE: " << configs.size() << std::endl;
+	std::vector<std::string> servernames;
+	for (const auto &c : configs)
+	{
+		// std::cout << "hereeeeeeeeeeeeeeeeeeeee" << std::endl;
+		// c->printConfig();
+		for(std::string c : c->serverNames)
+		{	std::cout << "HostName: " << c << std::endl;
+			servernames.push_back(c);
+		}
+			// std::cout << "Thereeeeeeeeeeeeeeeeeeeee" << std::endl;
+		// client.conf = c;
+		// std::cout << "ccccccccccccccc is: " << c->printConfig() << std::endl;
+		// for (const auto &name : c->getNames())
+		// {
+		// 	std::cout << "name " << name << std::endl;
+		// 	if (host == name)
+		// 	{
+		// 		std::cerr << "matched host header: " << name << std::endl;
+		// 		client.host_matched = true;
+		// 		client.conf = c;
+		// 		return;
+		// 	}
+		// }
+	}
+	for (const auto &c : configs)
+	{
+		for (const auto &name : servernames)
+		{
+			std::cout << "AAAAAname " << name << std::endl;
+			if (host == name)
+			{
+				std::cerr << "matched host header: " << name << std::endl;
+				client->host_matched = true;
+				client->conf = c;
+				return;
+			}
+		}
+	}
+	std::cout<<"------------------------config:"<<client->conf->index<<std::endl;
 }
 
 const char* sstate_to_string(State s) {
@@ -176,15 +230,15 @@ void Served::runEventloop()
 		
 		//3.將「所有已連線的 client socket」根據需要讀/寫的狀況加入 readSet / writeSet。
 		
-		for (std::map<int, ClientConnection>::iterator it= clients.begin(); it!= clients.end(); ++it)
+		for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it= clients.begin(); it!= clients.end(); ++it)
 		{
 			
 			int clientfd = it->first;
-			ClientConnection &conn = it->second;
-			if (conn.needRead()== true)
+			std::shared_ptr<ClientConnection> &conn = it->second;
+			if (conn->needRead()== true)
 				FD_SET(clientfd, &readSet);
 				
-			if (conn.needWrite() == true)
+			if (conn->needWrite() == true)
 				FD_SET(clientfd, &writeSet);
 				
 			if (clientfd > maxfd)
@@ -222,7 +276,7 @@ void Served::runEventloop()
 			std::cerr<< "Error: select()" << std::endl;
 			//close fd
 			
-			for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
+			for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
 				close(it->first);
 			}
@@ -236,9 +290,9 @@ void Served::runEventloop()
 		for (auto it = clients.begin(); it != clients.end();) 
 		{
 			int cfd = it->first;
-			ClientConnection &conn = it->second;
+			std::shared_ptr<ClientConnection> conn = it->second;
 		
-			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn.getLastActivity()).count();
+			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn->getLastActivity()).count();
 			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
 			if ( duration > 6000)
 			{
@@ -282,7 +336,7 @@ void Served::runEventloop()
 					{
 						std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
 
-						ClientConnection conn (clientFd, servers[i].port, this);// init client
+						std::shared_ptr<ClientConnection> conn = std::make_shared<ClientConnection>(clientFd, servers[i].port, this);// init client
 						//ClientConnection conn (clientFd);
 						// conn.appendToWriteBuffer("Hello from server!  here there (Test Message)\n");
 						//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
@@ -299,18 +353,20 @@ void Served::runEventloop()
 		}
 
 		//檢查所有現有 client FD，是否可讀
-		for (std::map<int, ClientConnection>::iterator it = clients.begin(); it != clients.end(); it++)
+		// auto it = clients.begin();
+		// while (it != clients.end())
+		for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			
 			
 			int cfd = it->first;
-			ClientConnection &conn = it->second;//?
+			std::shared_ptr<ClientConnection> conn = it->second;//?
 			bool closed = false;
 
 			//if can read
 			if (FD_ISSET(cfd, &readSet))
 			{
-				int n = conn.readData();
+				int n = conn->readData();
 			
 				if (n < 0)
 				{
@@ -326,13 +382,10 @@ void Served::runEventloop()
 				}
 				else if (n == 0) //接收完畢
 				{
-					// std::cout<<"ip:port:" <<conn.get_server()->servers[0].host<<":"<<conn.get_server()->servers[0].port<<std::endl;
-                    // std::cout<<"ip:port:" <<conn.get_server()->servers[1].host<<":"<<conn.get_server()->servers[1].port<<std::endl;
-                    // std::cout<<"ip:port:" <<conn.get_server()->servers[2].host<<":"<< conn.get_server()->servers[2].port<<std::endl;
-					std::cout << "Client " << cfd << " connected on server port: " << conn.getServerPort() << std::endl;
+					std::cout << "Client " << cfd << " connected on server port: " << conn->getServerPort() << std::endl;
 
 					
-					State state = conn.parse(State::STATUSLINE,conn.getwritebubffer(),n);
+					State state = conn->parse(State::STATUSLINE,conn->getwritebubffer(),n);
 					std::cout << sstate_to_string(state) << std::endl;
 					//routeconfig
 					set_config(conn);
@@ -341,32 +394,70 @@ void Served::runEventloop()
 					// 	std::cout<< static_cast<int>(state)<< std::endl;
 					// 	std::cout<< "B______________________________-:"<< conn._headers["host"]<<std::endl;
 					// 	}
-					
+					// std::cout<<"------------------------config:"<<conn->conf->index<<std::endl;
 					FD_CLR(cfd, &readSet);
 					FD_SET(cfd, &writeSet);
 				}
+				if (closed) continue;
 			}
 			
 				
 			//6.若有 client 可寫，就 send()。
 			//if (!closed && FD_ISSET(cfd, &writeSet) )
-			if (!closed && FD_ISSET(cfd, &writeSet) && conn.needWrite())
+			if (FD_ISSET(cfd, &writeSet) && conn->needWrite())
 			{
-				int sent = conn.writeData();
+				// int sent = conn.writeData();
+				int sent = 0;
+				if (!conn->resp) {
+					conn->resp = std::make_shared<Response>(conn, _locations);
+					conn->response = conn->resp->buffer.str();
+					std::cout << "response result: " << conn->response << std::endl;
+					conn->writeOffset = 0;
+				}
+
+				size_t	remaining = conn->response.size() - conn->writeOffset;
+				ssize_t	totalSent = 0;
+
+				while (remaining > 0) {
+					std::cout << "remain: " << remaining << "totalSent: " << totalSent << std::endl;
+					ssize_t sent = send(conn->fd, conn->response.data() + conn->writeOffset, remaining, 0);
+					if (sent > 0) {
+						conn->writeOffset += sent;
+						totalSent += sent;
+						remaining -= sent;
+						conn->lastActivity = std::chrono::steady_clock::now();
+					} else if (sent < 0) {
+						std::perror("send failed");
+						sent = -1;
+					} else {
+						sent = 0;    // Or -1. Will check it later
+					}
+				}
+				if (conn->writeOffset == conn->response.size()) {
+					conn->response.clear();
+					conn->writeOffset = 0;
+					sent = totalSent;
+					std::cout << "ssssssssssssssent: " << sent << std::endl;
+				}
+
 				if (sent < 0 || sent == 0)
 				{
 					if (sent < 0)
 						std::cerr << "❌ Error: failed to send data to client " << cfd << std::endl;
 					else
 						std::cout << "❌ Client " << cfd << " disconnected.hehehe" << std::endl;
-					close(cfd);
 					
+					
+					conn->resp.reset();
+					close(cfd);
 					it = clients.erase(it);
 					
 					closed = true;
 					break;
 				}
+				if (closed) continue;
 			}
+			// ++it;
 		}
 
 	}

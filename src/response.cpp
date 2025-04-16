@@ -4,11 +4,13 @@ Response::~Response()
 {
 }
 
-Response::Response(std::shared_ptr<ClientConnection> client, std::shared_ptr<Request> req)
-	: _request(req)
-	, _status_code(STATUS_NOT_FOUND)
+Response::Response(std::shared_ptr<ClientConnection> client, std::vector<std::shared_ptr<Location>> locations)
+	: _request(client),
+	_locations(locations),
+	_status_code(STATUS_NOT_FOUND)
 {
 	//this->_client = client;
+	std::cout << "so it is hereeeeeeeeeeeeeeeeeeeeeeeeee" <<std::endl;
 	int error_code = this->has_errors();
 
 	if (error_code)
@@ -35,6 +37,50 @@ Response::Response(std::shared_ptr<ClientConnection> client, std::shared_ptr<Req
 		_status_code = STATUS_OK;
 		return;
 	}
+
+	// if (_location->_session) _handleCookies();
+
+	if (_request->_method == METHOD_GET)
+		_status_code = handle_get();
+	if (_request->_method == METHOD_POST)
+		_status_code = handle_post();
+	if (_request->_method == METHOD_DELETE)
+		_status_code = handle_delete();
+	std::cout << "status-----------------------"<<_status_code <<std::endl;
+	finish_response();
+}
+
+Response::Response(ClientConnection* client, std::vector<std::shared_ptr<Location>>& locations)
+	:  _request(client),
+	_locations(locations),
+	_status_code(STATUS_NOT_FOUND) 
+{
+	std::cout << "actually it is hereeeeeeeeeeeeeeeeeeeeeeeeee" <<std::endl;
+	int error_code = this->has_errors();
+	if (error_code)
+	{
+		create_response(error_code);
+		return;
+	}
+	if (!_location->_redirectPath.empty())
+	{
+		std::cout << "dire-------------------- hereeeeeeeeeeeeeeeeeeeeeeeeee" <<std::endl;
+		create_response(_location->_redirectCode);
+		return;
+	}
+	fix_uri();
+
+	// if (Cgi::is_cgi(_location, _request->_uri))
+	// {
+	// 	if (!init_cgi(client))
+	// 	{
+	// 		_status_code = STATUS_INTERNAL_ERROR;
+	// 		finish_response();
+	// 		return;
+	// 	}
+	// 	_status_code = STATUS_OK;
+	// 	return;
+	// }
 
 	// if (_location->_session) _handleCookies();
 
@@ -80,14 +126,18 @@ void Response::finish_response(void)
 
 int Response::has_errors(void)
 {
+	std::cout<< "----------------url---------------------" << _request->_method_str<<std::endl;
 	if (_request->parse_error)
 		return _request->parse_error;
 
 	_location = find_location();
 	if (_location == nullptr)
+	{
+		// std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: "  << std::endl;
 		return STATUS_NOT_FOUND;
+	}
 
-	if (!Request::is_method_allowed(_location->_methods, _request->_method_str))
+	if (!ClientConnection::is_method_allowed(_location->_methods, _request->_method_str))
 		return STATUS_METHOD_NOT_ALLOWED;
 
 	if (!_location->_redirectPath.empty())
@@ -98,7 +148,10 @@ int Response::has_errors(void)
 
 		std::string uri_normalized = resolved.generic_string();
 		if (uri_normalized.rfind(_location->_rootPath, 0) != 0) //path traversal
+		{
+			
 			return STATUS_NOT_FOUND;
+		}
 	} catch (const std::exception &e) {
 		return 0;
 	}
@@ -139,6 +192,8 @@ void Response::create_response(int status)
 int Response::handle_get(void)
 {
 	std::string filename = _location->_rootPath + _request->_uri;
+	//filename = filename +"index.html";
+	std::cout<<"filename:---------------------"<<filename<<std::endl;
 	int flags = Io::file_stat(filename);
 
 	if (!flags)
@@ -195,7 +250,9 @@ int Response::handle_post(void)
 	if (wrote)
 		return STATUS_CREATED;
 	if (!flags)
+	{std::cout << "aaaaaaaaaaaaaa--------------------------------: "  << std::endl;
 		return STATUS_NOT_FOUND;
+	}
 	if (!(flags & FS_READ))
 		return STATUS_FORBIDDEN;
 	return STATUS_OK;
@@ -214,7 +271,7 @@ int Response::handle_delete(void)
 	return STATUS_OK;
 }
 
-void Response::finish_cgi(std::shared_ptr<Request> req)
+void Response::finish_cgi(std::shared_ptr<ClientConnection> req)
 {
 	if (req->parse_error) {
 		_status_code = req->parse_error;
@@ -292,14 +349,19 @@ void Response::generate_error_page(int code)
 
 std::shared_ptr<Location> Response::find_location(void)
 {
-	std::shared_ptr<Location> ret;
-
+	std::shared_ptr<Location> ret=_locations.front();
+	// std::shared_ptr<Location> ret;
+	Location defaultpath;
+	
+	
 	if (_request->conf == nullptr)
 		return nullptr;
-	for (const auto &loc : _request->conf->getLocations())
+	for (const auto &loc : _locations)
 	{
+		// std::cout << "lllllllllllllllllllllllllllocation: " << loc->_path << " request uri: " << _request->_uri << std::endl;
 		if (_request->_uri == loc->_path)
 		{
+			
 			ret = loc;
 			break;
 		}
@@ -310,7 +372,10 @@ std::shared_ptr<Location> Response::find_location(void)
 				ret = loc;
 			}
 		}
+	
 	}
+	
+	
 	return ret;
 }
 

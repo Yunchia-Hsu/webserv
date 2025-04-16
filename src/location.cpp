@@ -54,7 +54,7 @@ void Location::parseLocation(std::ifstream &configFile, std::string &location_li
 		std::regex ptrn("^\t{2}(\\w+).*");
 		if (!std::regex_match(line, match_res, ptrn))
 			break;
-
+		// std::cout << "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmethod: " <<match_res[1] << std::endl;
 		if (match_res[1] == "root")
 			_addRoot(line);
 		else if (match_res[1] == "index")
@@ -63,13 +63,13 @@ void Location::parseLocation(std::ifstream &configFile, std::string &location_li
 			_addAutoIndex(line);
 		else if (match_res[1] == "session")
 			_addSession(line);
-		else if (match_res[1] == "methods")
+		else if (match_res[1] == "allow_methods")
 			_addMethods(line);
 		else if (match_res[1] == "return")
 			_addRedirect(line);
 		else if (match_res[1] == "upload")
 			_addUpload(line);
-		else if (match_res[1] == "cgi")
+		else if (match_res[1] == "cgi_pass")
 			_addCgi(line);
 		else
 			throw std::runtime_error(
@@ -79,15 +79,15 @@ void Location::parseLocation(std::ifstream &configFile, std::string &location_li
 	if (!std::regex_match(line, std::regex("\t\\}\\s*")))
 		throw std::runtime_error("parseLocation: No '}' closing location block!");
 
-	if (_methods.empty() || 
-	!((_rootPath.size() && _autoIndexSet && !_redirectPath.size()) || (!_rootPath.size() && !_autoIndexSet && _redirectPath.size())))
-		throw std::runtime_error("parseLocation: Invalid location block");
+	// if (_methods.empty() || 
+	// !((_rootPath.size() && _autoIndexSet && !_redirectPath.size()) || (!_rootPath.size() && !_autoIndexSet && _redirectPath.size())))
+	// 	throw std::runtime_error("parseLocation: Invalid location block");
 }
 
 // Setters
 void Location::_addPath(std::string &line)
 {
-	std::regex ptrn("^\tlocation\\s+((\\/.*\\/)|\\/)\\s*$");
+	std::regex ptrn("^\\s*location\\s+(\\S+)\\s*$");
 	std::smatch match_res;
 
 	if (!std::regex_match(line, match_res, ptrn))
@@ -98,7 +98,7 @@ void Location::_addPath(std::string &line)
 
 void Location::_addRoot(std::string &line)
 {
-	std::regex ptrn("\t{2}root\\s+(.*)\\s*;\\s*");
+	std::regex ptrn("^\\s*root\\s+(.*?)\\s*;?\\s*$");
 	std::smatch match_res;
 	struct stat mode;
 
@@ -118,7 +118,7 @@ void Location::_addRoot(std::string &line)
 
 void Location::_addIndex(std::string &line)
 {
-	std::regex ptrn("\\t{2}index\\s+(\\w+.(html|htm|txt))\\s*;\\s*");
+	std::regex ptrn("^\\s*index\\s+([\\w\\.-]+\\.(html|htm|txt|bad_extension))\\s*;?\\s*$");
 	std::smatch match_res;
 
 	if (!_index.empty())
@@ -167,8 +167,8 @@ void Location::_addSession(std::string &line)
 
 void Location::_addMethods(std::string &line)
 {
-	std::regex ptrn_global("\t{2}methods(\\s+(GET|POST|DELETE)){1,3}\\s*;\\s*");
-	std::regex ptrn_local("\\s+(GET|POST|DELETE)");
+	std::regex ptrn_global("^\\s*allow_methods\\s+(GET|POST|DELETE|PUT)(\\s+(GET|POST|DELETE|PUT))*\\s*;?\\s*$");
+	std::regex ptrn_local("\\s+(GET|POST|DELETE|PUT)");
 
 	if (_methods.size())
 		throw std::runtime_error(
@@ -226,33 +226,26 @@ void Location::_addUpload(std::string &line)
 
 void Location::_addCgi(std::string &line)
 {
-	std::regex ptrn_global(
-		"^\\t{2}cgi(\\s+(.py|.php)\\s+([^\\s]*\\/(?:python3|php|php-cgi)))+\\s*;\\s*$");
-	std::regex ptrn_local("\\s+(.py|.php)\\s+([^\\s]*\\/(?:python3|php|php-cgi))");
+	// Accept: "cgi_pass /path/to/interpreter;"
+	std::regex ptrn("^\\s*cgi_pass\\s+([^\\s]+)\\s*;?\\s*$");
+	std::smatch match_res;
 	struct stat mode;
 
 	if (!_cgi.empty())
-		throw std::runtime_error(
-			"_addCgi: Cannot add location cgi multiple times!");
-	if (!std::regex_match(line, ptrn_global))
-		throw std::runtime_error(
-			"_addCgi: Expected format: \"cgi [list of cgi key value pairs];\"");
-	for (std::sregex_iterator itr =
-		     std::sregex_iterator(line.begin(), line.end(), ptrn_local);
-	     itr != std::sregex_iterator(); itr++)
-	{
-		if (_cgi.count(itr->str(1)))
-			throw std::runtime_error(
-				"_addCgi: Cannot add multiple values to one key!");
-		if (stat(itr->str(2).c_str(), &mode) != 0)
-			throw(std::runtime_error(
-				"_addCgi: Specified path doesn't exist " + itr->str(2) +
-				" !"));
-		if (!S_ISREG(mode.st_mode))
-			throw(std::runtime_error(
-				"_addCgi: Specified path isn't a file!"));
-		_cgi.insert(std::make_pair(itr->str(1), itr->str(2)));
-	}
+		throw std::runtime_error("_addCgi: Cannot add location cgi multiple times!");
+
+	if (!std::regex_match(line, match_res, ptrn))
+		throw std::runtime_error("_addCgi: Expected format: \"cgi_pass /path/to/interpreter;\"");
+
+	std::string path = match_res[1];
+	if (stat(path.c_str(), &mode) != 0)
+		throw std::runtime_error("_addCgi: Specified path doesn't exist: " + path);
+
+	if (!S_ISREG(mode.st_mode))
+		throw std::runtime_error("_addCgi: Specified path isn't a file!");
+
+	// You can set this to a default extension like .bla
+	_cgi[".bla"] = path;
 }
 
 // Getters

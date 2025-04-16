@@ -1,6 +1,6 @@
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++17
-LDFLAGS = -lstdc++fs  # optional for older GCCs
+CXXFLAGS = -Wall -Wextra -Werror -std=c++17 -fsanitize=address -g
+LDFLAGS = -lstdc++fs -fsanitize=address  # optional for older GCCs
 NAME = webserved
 
 SRC = src/main.cpp src/confiParser.cpp src/RouteConf.cpp \

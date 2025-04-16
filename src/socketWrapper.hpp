@@ -1,3 +1,5 @@
+#pragma once
+
 #include <arpa/inet.h>
 
 #include "utils.hpp"
@@ -11,6 +13,7 @@ class SocketWrapper {
 
 public:
 	SocketWrapper() : sockfd(-1) {}
+	SocketWrapper(ServerConf server) : sockfd(-1), servers{std::make_shared<ServerConf>(server)} {}
 
 	void addServer(const ServerConf &conf) {
 		servers.push_back(std::make_shared<ServerConf>(conf));

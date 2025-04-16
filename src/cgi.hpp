@@ -2,13 +2,13 @@
 
 #include "io.hpp"
 #include "utils.hpp"
-#include "request.hpp"
 #include "location.hpp"
 #include "ClientConnection.hpp"
 
 extern std::unordered_map<std::string, std::string> cgi_map;
 
 class Location;
+class ClientConnection;
 
 static_assert(__cplusplus >= 201703L, "C++17 is not enabled!");
 
@@ -22,7 +22,7 @@ class Cgi {
 	std::vector<std::string> _env;
 
 	void env_set(const std::string &key, const std::string &value);
-	void env_set_vars(std::shared_ptr<Request> request);
+	void env_set_vars(std::shared_ptr<ClientConnection> request);
 
 	bool parent_init(int pid, int *fd_from, int *fd_to);
 	void child_process(std::shared_ptr<ClientConnection> client,
@@ -30,7 +30,7 @@ class Cgi {
 
     public:
 	Cgi();
-	Cgi(std::shared_ptr<Location> location, std::shared_ptr<Request> request);
+	Cgi(std::shared_ptr<Location> location, std::shared_ptr<ClientConnection> request);
 	~Cgi();
 
 	bool start(std::shared_ptr<ClientConnection> client);

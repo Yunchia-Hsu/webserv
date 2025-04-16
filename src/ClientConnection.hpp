@@ -3,7 +3,6 @@
 
 
 #include "confiParser.hpp"
-#include "request.hpp"
 #include <iostream>
 #include <vector>
 #include <map>
@@ -39,12 +38,27 @@ enum {
 	CONN_CGI,
 };
 
+enum {
+	BODY_TYPE_NORMAL,
+	BODY_TYPE_CHUNKED,
+	BODY_TYPE_MULTIPART,
+};
+
+struct Part
+{
+    std::string data;
+	std::string name;
+	std::string filename;
+	std::string content_type;
+};
+
 #include <regex>
 #include <string>
 #include <unordered_map>
 
 #include "utils.hpp"
 #include "confiParser.hpp"
+#include "response.hpp"
 
 // #define URI_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;="
 // #define FIELD_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
@@ -85,6 +99,20 @@ class Served;
 class ClientConnection
 {
 private:
+    
+
+    State parse_status_line(void);
+    State parse_header(void);
+    bool parse_header_field(size_t pos);
+    State parse_body(void);
+    State parse_body_cgi(void);
+    State parse_chunked(void);
+    void parse_multipart(void);
+
+    State parse_header_cgi(void);
+
+public:
+
     int fd;
     std::string writeBuffer; // 儲存待傳送給客戶端的資料
     std::string sendBuffer; //
@@ -103,18 +131,6 @@ private:
     std::string _buffer;
 
     bool _cgi;
-
-    State parse_status_line(void);
-    State parse_header(void);
-    bool parse_header_field(size_t pos);
-    State parse_body(void);
-    State parse_body_cgi(void);
-    State parse_chunked(void);
-    void parse_multipart(void);
-
-    State parse_header_cgi(void);
-
-public:
     
     std::string getwritebubffer()
     {
@@ -128,6 +144,7 @@ public:
    int checkend(std::string str, std::string end); //return 0 done, 1 not done
     void appendToWriteBuffer(const std::string &data);
     int writeData();
+    // int writeData(std::shared_ptr<ClientConnection> client);
 	int getServerPort() const { return serverPort; }
     std::string get_buffer()
     {
@@ -160,9 +177,12 @@ public:
     std::string _body;
     int _body_type;
 
+    std::shared_ptr<Response> resp;
+    std::string response;
+
     bool host_matched;
     std::vector<Part> parts;
-    std::shared_ptr<ConfiParser> conf;
+    std::shared_ptr<ServerConf> conf;
 
     ClientConnection();
     ClientConnection(bool cgi);

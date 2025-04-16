@@ -13,6 +13,7 @@
 #include "ServerConf.hpp"
 #include "RouteConf.hpp"
 #include "location.hpp"
+#include "socketWrapper.hpp"
 
 class Location;
 
@@ -26,6 +27,9 @@ class ConfiParser
         std::vector<std::shared_ptr<Location> > _locations;
 
     public:
+
+        std::map<std::string, std::shared_ptr<SocketWrapper>> portsToSockets;
+
         ConfiParser();
         ~ConfiParser();
 
@@ -42,7 +46,6 @@ class ConfiParser
         void testPrinter() const;
 
         std::vector<std::shared_ptr<Location>> &getLocations();
-
 };
 
 #endif

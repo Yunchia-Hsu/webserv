@@ -42,6 +42,7 @@ class ServerConf
         std::set<std::string> methods;
 
 		ServerConf();
+        ServerConf(std::string& name);
 		void printConfig() const;
 
 };

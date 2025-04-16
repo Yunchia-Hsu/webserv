@@ -7,7 +7,7 @@ Cgi::Cgi()
 {
 }
 
-Cgi::Cgi(std::shared_ptr<Location> location, std::shared_ptr<Request> request)
+Cgi::Cgi(std::shared_ptr<Location> location, std::shared_ptr<ClientConnection> request)
 {
 	_document_root = location->_rootPath;
 	std::string ext = Io::get_file_ext(request->_uri);
@@ -47,7 +47,7 @@ void Cgi::env_set(const std::string &key, const std::string &value)
 	_env.push_back(var);
 }
 
-void Cgi::env_set_vars(std::shared_ptr<Request> request)
+void Cgi::env_set_vars(std::shared_ptr<ClientConnection> request)
 {
 	env_set("GATEWAY_INTERFACE", "CGI/1.1");
 	env_set("SERVER_PROTOCOL", "HTTP/1.1");

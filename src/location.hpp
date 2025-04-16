@@ -1,7 +1,7 @@
 #pragma once
 
-#include "request.hpp"
 #include "utils.hpp"
+#include "ServerConf.hpp"
 
 class Location {
     private:
@@ -9,6 +9,7 @@ class Location {
 	ServerConf *_serverConfig;       //check it later
 	std::string _path;
 	std::string _rootPath;
+	std::string _serverRootPath;
 	std::string _index;
 	bool _autoIndex;
 	bool _autoIndexSet;

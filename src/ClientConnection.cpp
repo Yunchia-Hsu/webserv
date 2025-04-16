@@ -227,6 +227,43 @@ int ClientConnection::writeData()
     return static_cast<int> (totalSent);
 }
 
+// int ClientConnection::writeData(std::shared_ptr<ClientConnection> client) {
+// 	if (!needWrite()) return 0;
+
+// 	// 🆕 Step: Generate response if not already generated
+// 	if (!resp) {
+// 		resp = std::make_shared<Response>(client);
+// 		// Fill response buffer
+// 		response = resp->buffer.str();  // or whatever your Response uses
+// 		writeOffset = 0; // reset
+// 	}
+
+// 	size_t remaining = response.size() - writeOffset;
+// 	ssize_t totalSent = 0;
+
+// 	while (remaining > 0) {
+// 		ssize_t sent = send(fd, response.data() + writeOffset, remaining, 0);
+// 		if (sent > 0) {
+// 			writeOffset += sent;
+// 			totalSent += sent;
+// 			remaining -= sent;
+// 			lastActivity = std::chrono::steady_clock::now();
+// 		} else if (sent < 0) {
+// 			std::perror("send() failed");
+// 			return -1;
+// 		} else {
+// 			return -1; // send returned 0 — assume closed
+// 		}
+// 	}
+
+// 	if (writeOffset == response.size()) {
+// 		response.clear();
+// 		writeOffset = 0;
+// 	}
+
+// 	return static_cast<int>(totalSent);
+// }
+
 //lastactivity getter
 std::chrono::steady_clock::time_point ClientConnection::getLastActivity() const
 {
@@ -298,7 +335,7 @@ State ClientConnection::parse(State s_start, std::string data, size_t size)
 
 	if (_state < s_start)
 		_state = s_start;
-	std::cout << "string: " << data << "Current state: " << state_to_string(_state) << "s_state: " << state_to_string(s_start) << std::endl;
+	// std::cout << "string: " << data << "Current state: " << state_to_string(_state) << "s_state: " << state_to_string(s_start) << std::endl;
 	while (_state != State::OK && _state != State::ERROR)
 	{
 		switch (_state)
@@ -335,7 +372,7 @@ State ClientConnection::parse(State s_start, std::string data, size_t size)
 		}
 		if (_state >= State::PARTIALSTATUS && _state <= State::PARTIALBODY)
 			break;
-		std::cout << "Current eee: " << this->parse_error << std::endl;
+		// std::cout << "Current eee: " << this->parse_error << std::endl;
 	}
 	if (_state == State::ERROR && !this->parse_error)
 	{
@@ -372,6 +409,7 @@ State ClientConnection::parse_status_line(void)
 	
 	_method_str = m[1];
 	_uri = Utils::url_decode(m[2]);
+	std::cout << "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuurl: " << _uri << std::endl;
 	_version = m[3];
 
 	if (method_map.count(_method_str) == 0)
@@ -597,8 +635,14 @@ void ClientConnection::check_body_limit(void)
 
 bool ClientConnection::is_method_allowed(std::vector<std::string> allowed, std::string method)
 {
+	std::cout << "allow begin: " << *allowed.begin() << " allow end: " << *allowed.end() << " method: " << method << std::endl;
+	for (const auto &var : allowed){
+		std::cout << "allowwwwwwwwwww: " << var << std::endl;
+	}
+
 	if (std::find(allowed.begin(), allowed.end(), method) == allowed.end())
 	{
+		
 		return false;
 	}
 	return true;
