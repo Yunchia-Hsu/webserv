@@ -24,6 +24,8 @@ class ConfiParser
         std::vector<std::string> confiLines;
         std::vector<ServerConf> servers;
         std::map<std::string, std::string> globalConfi;
+
+        //NO THIS, BUT save in ServerConf with vector
         std::vector<std::shared_ptr<Location> > _locations;
 
     public:

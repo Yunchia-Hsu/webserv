@@ -15,7 +15,9 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <memory>
 
+class Location;
 
 class ServerConf 
 {
@@ -40,6 +42,9 @@ class ServerConf
         // additional  settings
         std::map<std::string, std::string> extraConfi;
         std::set<std::string> methods;
+
+        //ADD Server location vector 21.4
+        std::vector<std::shared_ptr<Location> > locations;
 
 		ServerConf();
         ServerConf(std::string& name);

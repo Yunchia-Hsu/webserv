@@ -27,7 +27,8 @@ class Location {
 	~Location();
 	Location &operator=(const Location &original);
 
-	void parseLocation(std::ifstream &configFile, std::string &location_line);
+	//void parseLocation(std::ifstream &configFile, std::string &location_line);
+	void  parseLocation(std::ifstream &configFile, const std::string& path);
 	void _addPath(std::string &line);
 	void _addAutoIndex(std::string &line);
 	void _addRoot(std::string &line);

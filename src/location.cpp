@@ -37,21 +37,33 @@ Location &Location::operator=(const Location &original)
 	return (*this);
 }
 
-void Location::parseLocation(std::ifstream &configFile, std::string &location_line)
+//void Location::parseLocation(std::ifstream &configFile, std::string &location_line)
+void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 {
+	
 	std::string line;
+	
+	//Parser should handle this already? 21.4
+	 //_addPath(location_line);
+	
+	this->_path = path;
 
-	_addPath(location_line);
 	Utils::skipEmptyLines(configFile, line);
 	if (!configFile)
 		throw std::runtime_error("parseLocation: Empty location block!");
-	if (!std::regex_match(line, std::regex("\t\\{\\s*")))
-		throw std::runtime_error("parseLocation: No '{' opening location block!");
+
+	// -  We don't want to do this as it is too strict and can create a crash if not clean user input
+	// - we should not have { anymore as we skipped it in previous step
+	// if (!std::regex_match(line, std::regex("\t\\{\\s*")))
+	// 	throw std::runtime_error("parseLocation: No '{' opening location block!");
+	// instead
+	
 
 	while (Utils::skipEmptyLines(configFile, line), configFile)
 	{
 		std::smatch match_res;
-		std::regex ptrn("^\t{2}(\\w+).*");
+		//std::regex ptrn("^\t{2}(\\w+).*");
+		std::regex ptrn("^\\s*(\\w+)\\s+.*");  // ALLOW spaces or tabs for stupid user input 
 		if (!std::regex_match(line, match_res, ptrn))
 			break;
 		// std::cout << "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmethod: " <<match_res[1] << std::endl;
@@ -76,8 +88,12 @@ void Location::parseLocation(std::ifstream &configFile, std::string &location_li
 				"parseLocation: Unknown element in location block: " +
 				line);
 	}
-	if (!std::regex_match(line, std::regex("\t\\}\\s*")))
-		throw std::runtime_error("parseLocation: No '}' closing location block!");
+
+	// We don't want to do this as it is too strict and can create a crash if not clean user input	
+	// if (!std::regex_match(line, std::regex("\t\\}\\s*")))
+	// 	throw std::runtime_error("parseLocation: No '}' closing location block!");
+	if (line.find("}") == std::string::npos)
+		throw std::runtime_error("Location parser is angry, no '{' on location block!");
 
 	// if (_methods.empty() || 
 	// !((_rootPath.size() && _autoIndexSet && !_redirectPath.size()) || (!_rootPath.size() && !_autoIndexSet && _redirectPath.size())))
