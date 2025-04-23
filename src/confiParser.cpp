@@ -289,9 +289,15 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 				if (line != "{")
 					throw std::runtime_error("Expected '{' after location path");
 			}
+
+			//test lines:
 		
 			std::shared_ptr<Location> location(new Location(&server));
+//			std::cout << "pppppppppppppppppppath: " << path <<std::endl;
 			location->parseLocation(file, path);
+			
+			if (!location->_methods.empty())
+				std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
 			server.locations.push_back(location);
 		}
 
