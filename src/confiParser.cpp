@@ -147,19 +147,28 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 	// std::cout << "nnnnnnnnn-------------------------------------------------nnnnname: " << std::endl;
 	if (keyWord  == "listen")
 	{
-	
-		std::cout  << "Raw listen value: " << value << std::endl; // DEGUB
+		std::string cleanedValue = value;
+		cleanedValue.erase(std::remove_if(cleanedValue.begin(), cleanedValue.end(), ::isspace), cleanedValue.end());
 
 		size_t doubleDot = value.find(":");
 		if (doubleDot != std::string::npos)
 		{
-			server.host = value.substr(0, doubleDot);
-			server.port = std::stoi(value.substr(doubleDot + 1));
+			server.host = cleanedValue.substr(0, doubleDot);
+
+			std::string portStr = cleanedValue.substr(doubleDot + 1);
+			int port = std::stoi(portStr);
+			if (port < 1 || port > 65535)
+				throw std::runtime_error("Invalid port is not a good port!");
+
+			server.port = port;
 		}
 		else
 		{
 			server.host = "0.0.0.0"; // set to default
-			server.port = std::stoi(value);
+			int port = std::stoi(cleanedValue);
+			if (port < 1 || port > 65535)
+				throw std::runtime_error("Invalid port is not a good port!");
+			server.port = port;
 		}
 		
 		std::cout << "✅ Parsed port: " << server.port << std::endl; // DEBUG
@@ -289,9 +298,15 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 				if (line != "{")
 					throw std::runtime_error("Expected '{' after location path");
 			}
+
+			//test lines:
 		
 			std::shared_ptr<Location> location(new Location(&server));
+//			std::cout << "pppppppppppppppppppath: " << path <<std::endl;
 			location->parseLocation(file, path);
+			
+			if (!location->_methods.empty())
+				std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
 			server.locations.push_back(location);
 		}
 

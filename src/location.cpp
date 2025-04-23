@@ -61,6 +61,10 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 
 	while (Utils::skipEmptyLines(configFile, line), configFile)
 	{
+
+		std::cout << "[LocationParser Line] " << line << std::endl;
+
+
 		std::smatch match_res;
 		//std::regex ptrn("^\t{2}(\\w+).*");
 		std::regex ptrn("^\\s*(\\w+)\\s+.*");  // ALLOW spaces or tabs for stupid user input 
@@ -75,7 +79,7 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 			_addAutoIndex(line);
 		else if (match_res[1] == "session")
 			_addSession(line);
-		else if (match_res[1] == "allow_methods")
+		else if (match_res[1] == "allow_methods" || match_res[1] == "methods")
 			_addMethods(line);
 		else if (match_res[1] == "return")
 			_addRedirect(line);
