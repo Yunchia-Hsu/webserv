@@ -311,8 +311,8 @@ void Response::generate_error_page(int code)
 std::shared_ptr<Location> Response::find_location(void)
 {
 	// std::shared_ptr<Location> ret=_locations.front();
-	// std::shared_ptr<Location> ret = _request->conf->getLocations().front();
-	std::shared_ptr<Location> ret;
+	std::shared_ptr<Location> ret = _request->conf->getLocations().front();
+	// std::shared_ptr<Location> ret;
 	Location defaultpath;
 	
 	

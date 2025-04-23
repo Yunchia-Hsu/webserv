@@ -280,10 +280,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 	
 		if (keyWord == "location")
 		{
-<<<<<<< HEAD
 			//THIS IS PROBABLY NOT NEEDED!!!!
-=======
->>>>>>> e326fbd (ready for merge)
 			// std::string path = value;
 
 			// if (path.find("{") != std::string::npos)
@@ -306,7 +303,6 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			//test lines:
 		
 			std::shared_ptr<Location> location(new Location(&server));
-<<<<<<< HEAD
 //			std::cout << "pppppppppppppppppppath: " << path <<std::endl;
 			location->parseLocation(file, line);
 			
@@ -314,11 +310,6 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 				std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
 			else
 				std::cout << "EMPTY EMPYT EMPTY" << std::endl;
-=======
-			std::cout << "pppppppppppppppppppath: " << line <<std::endl;
-			location->parseLocation(file, line);
-			std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
->>>>>>> e326fbd (ready for merge)
 			server.locations.push_back(location);
 		}
 

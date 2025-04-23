@@ -3,6 +3,7 @@
 #include <fcntl.h>    // For fcntl(), F_GETFL, F_SETFL, O_NONBLOCK  
 Served::Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets) : servers(parsedServers) {
 	_portsToSockets = portToSockets;
+	std::cout << "server lengthhhhhhhhhhhhhhh: " << servers.size() << std::endl;
 	// _locations = locations;
 	// std::cout << "Here is the locations lallalaalalalalala:" << _locations[0];
 }
