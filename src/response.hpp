@@ -49,8 +49,8 @@ class Response {
 	std::ostringstream _body;
 	std::ostringstream buffer;
 
-	Response(std::shared_ptr<ClientConnection> client, std::vector<std::shared_ptr<Location>> locations);
-	Response(ClientConnection* client, std::vector<std::shared_ptr<Location>>& locations);
+	Response(std::shared_ptr<ClientConnection> client);
+	// Response(ClientConnection* client, std::vector<std::shared_ptr<Location>>& locations);
 	void finish_response(void);
 	void finish_cgi(std::shared_ptr<ClientConnection> req_cgi);
 	void set_error(int code);

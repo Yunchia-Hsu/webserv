@@ -4,9 +4,9 @@ Response::~Response()
 {
 }
 
-Response::Response(std::shared_ptr<ClientConnection> client, std::vector<std::shared_ptr<Location>> locations)
+Response::Response(std::shared_ptr<ClientConnection> client)
 	: _request(client),
-	_locations(locations),
+	// _locations(locations),
 	_status_code(STATUS_NOT_FOUND)
 {
 	//this->_client = client;
@@ -50,49 +50,6 @@ Response::Response(std::shared_ptr<ClientConnection> client, std::vector<std::sh
 	finish_response();
 }
 
-Response::Response(ClientConnection* client, std::vector<std::shared_ptr<Location>>& locations)
-	:  _request(client),
-	_locations(locations),
-	_status_code(STATUS_NOT_FOUND) 
-{
-	std::cout << "actually it is hereeeeeeeeeeeeeeeeeeeeeeeeee" <<std::endl;
-	int error_code = this->has_errors();
-	if (error_code)
-	{
-		create_response(error_code);
-		return;
-	}
-	if (!_location->_redirectPath.empty())
-	{
-		std::cout << "dire-------------------- hereeeeeeeeeeeeeeeeeeeeeeeeee" <<std::endl;
-		create_response(_location->_redirectCode);
-		return;
-	}
-	fix_uri();
-
-	// if (Cgi::is_cgi(_location, _request->_uri))
-	// {
-	// 	if (!init_cgi(client))
-	// 	{
-	// 		_status_code = STATUS_INTERNAL_ERROR;
-	// 		finish_response();
-	// 		return;
-	// 	}
-	// 	_status_code = STATUS_OK;
-	// 	return;
-	// }
-
-	// if (_location->_session) _handleCookies();
-
-	if (_request->_method == METHOD_GET)
-		_status_code = handle_get();
-	if (_request->_method == METHOD_POST)
-		_status_code = handle_post();
-	if (_request->_method == METHOD_DELETE)
-		_status_code = handle_delete();
-	finish_response();
-}
-
 void Response::fix_uri(void)
 {
 	if (_request->_uri.rfind(_location->_path, 0) == 0)
@@ -133,7 +90,7 @@ int Response::has_errors(void)
 	_location = find_location();
 	if (_location == nullptr)
 	{
-		// std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: "  << std::endl;
+		std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: "  << std::endl;
 		return STATUS_NOT_FOUND;
 	}
 
@@ -197,7 +154,10 @@ int Response::handle_get(void)
 	int flags = Io::file_stat(filename);
 
 	if (!flags)
+	{
+		std::cout << "1hhhhhhhhhhhhhhhhhhhhhhhhhhhhere is the error place\n";
 		return STATUS_NOT_FOUND;
+	}
 	if (!(flags & FS_READ))
 		return STATUS_FORBIDDEN;
 
@@ -219,6 +179,7 @@ int Response::handle_get(void)
 			return STATUS_INTERNAL_ERROR;
 		return STATUS_OK;
 	}
+	std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhere is the error place\n";
 	return STATUS_NOT_FOUND;
 }
 
@@ -349,23 +310,23 @@ void Response::generate_error_page(int code)
 
 std::shared_ptr<Location> Response::find_location(void)
 {
-	std::shared_ptr<Location> ret=_locations.front();
-	// std::shared_ptr<Location> ret;
+	// std::shared_ptr<Location> ret=_locations.front();
+	std::shared_ptr<Location> ret = _request->conf->getLocations().front();
 	Location defaultpath;
 	
 	
 	if (_request->conf == nullptr)
 		return nullptr;
-	for (const auto &loc : _locations)
+	for (const auto &loc : _request->conf->getLocations())
 	{
-		// std::cout << "lllllllllllllllllllllllllllocation: " << loc->_path << " request uri: " << _request->_uri << std::endl;
+		std::cout << "lllllllllllllllllllllllllllocation: " << loc->_path << " request uri: " << _request->_uri << std::endl;
 		if (_request->_uri == loc->_path)
 		{
 			
 			ret = loc;
 			break;
 		}
-		if (_request->_uri.rfind(loc->_path, 0) == 0 && loc->_path.back() == '/')
+		if (_request->_uri.rfind(loc->_path, 0) == 0)
 		{
 			if (!ret || loc->_path.size() > ret->_path.size())
 			{
@@ -375,7 +336,7 @@ std::shared_ptr<Location> Response::find_location(void)
 	
 	}
 	
-	
+	std::cout << "2lllllllllllllllllllllllllllocation: " << ret->_path << " request uri: " << _request->_uri << std::endl;
 	return ret;
 }
 

@@ -635,10 +635,10 @@ void ClientConnection::check_body_limit(void)
 
 bool ClientConnection::is_method_allowed(std::vector<std::string> allowed, std::string method)
 {
-	std::cout << "allow begin: " << *allowed.begin() << " allow end: " << *allowed.end() << " method: " << method << std::endl;
-	for (const auto &var : allowed){
-		std::cout << "allowwwwwwwwwww: " << var << std::endl;
-	}
+	// std::cout << "allow begin: " << *allowed.begin() << " allow end: " << *allowed.end() << " method: " << method << std::endl;
+	// for (const auto &var : allowed){
+	// 	std::cout << "allowwwwwwwwwww: " << var << std::endl;
+	// }
 
 	if (std::find(allowed.begin(), allowed.end(), method) == allowed.end())
 	{

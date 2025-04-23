@@ -39,3 +39,7 @@ void ServerConf::printConfig() const
         std::cout << "  " << entry.first << " = " << entry.second << std::endl;
 }
 
+std::vector<std::shared_ptr<Location> > &ServerConf::getLocations()
+{
+	return locations;
+}

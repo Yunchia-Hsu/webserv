@@ -49,6 +49,7 @@ class ServerConf
 		ServerConf();
         ServerConf(std::string& name);
 		void printConfig() const;
+        std::vector<std::shared_ptr<Location> > &getLocations();
 
 };
 

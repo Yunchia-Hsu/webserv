@@ -43,7 +43,7 @@ class Served
 		std::string response;
 
 	public:
-		Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets, std::vector<std::shared_ptr<Location>> locations);
+		Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets);
 		void start();
 		
 		int getport(int i)

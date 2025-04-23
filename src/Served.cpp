@@ -1,9 +1,9 @@
 
 #include "Served.hpp"
 #include <fcntl.h>    // For fcntl(), F_GETFL, F_SETFL, O_NONBLOCK  
-Served::Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets, std::vector<std::shared_ptr<Location>> locations) : servers(parsedServers) {
+Served::Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets) : servers(parsedServers) {
 	_portsToSockets = portToSockets;
-	_locations = locations;
+	// _locations = locations;
 	// std::cout << "Here is the locations lallalaalalalalala:" << _locations[0];
 }
 
@@ -409,7 +409,7 @@ void Served::runEventloop()
 				// int sent = conn.writeData();
 				int sent = 0;
 				if (!conn->resp) {
-					conn->resp = std::make_shared<Response>(conn, _locations);
+					conn->resp = std::make_shared<Response>(conn);
 					conn->response = conn->resp->buffer.str();
 					std::cout << "response result: " << conn->response << std::endl;
 					conn->writeOffset = 0;
