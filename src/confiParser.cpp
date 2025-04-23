@@ -280,33 +280,36 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 	
 		if (keyWord == "location")
 		{
-			std::string path = value;
+			//THIS IS PROBABLY NOT NEEDED!!!!
+			// std::string path = value;
 
-			if (path.find("{") != std::string::npos)
-			{
-				path = path.substr(0, path.find("{"));
-				size_t end = path.find_last_not_of("\t");
-				if (end != std::string::npos)
-					path = path.substr(0, end + 1);
-			}
-			else
-			{
-				std::getline(file, line);
-				start = line.find_first_not_of("\t");
-				if (start != std::string::npos)
-					line = line.substr(start);
-				if (line != "{")
-					throw std::runtime_error("Expected '{' after location path");
-			}
+			// if (path.find("{") != std::string::npos)
+			// {
+			// 	path = path.substr(0, path.find("{"));
+			// 	size_t end = path.find_last_not_of("\t");
+			// 	if (end != std::string::npos)
+			// 		path = path.substr(0, end + 1);
+			// }
+			// else
+			// {
+			// 	std::getline(file, line);
+			// 	start = line.find_first_not_of("\t");
+			// 	if (start != std::string::npos)
+			// 		line = line.substr(start);
+			// 	if (line != "{")
+			// 		throw std::runtime_error("Expected '{' after location path");
+			// }
 
 			//test lines:
 		
 			std::shared_ptr<Location> location(new Location(&server));
 //			std::cout << "pppppppppppppppppppath: " << path <<std::endl;
-			location->parseLocation(file, path);
+			location->parseLocation(file, line);
 			
 			if (!location->_methods.empty())
 				std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
+			else
+				std::cout << "EMPTY EMPYT EMPTY" << std::endl;
 			server.locations.push_back(location);
 		}
 
