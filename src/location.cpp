@@ -68,29 +68,43 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 		std::smatch match_res;
 		//std::regex ptrn("^\t{2}(\\w+).*");
 		std::regex ptrn("^\\s*(\\w+)\\s+.*");  // ALLOW spaces or tabs for stupid user input 
+		
 		if (!std::regex_match(line, match_res, ptrn))
-			break;
+		{
+			if (line.find("}") != std::string::npos)
+				break;
+			continue;
+		}
 		// std::cout << "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmethod: " <<match_res[1] << std::endl;
-		if (match_res[1] == "root")
-			_addRoot(line);
-		else if (match_res[1] == "index")
-			_addIndex(line);
-		else if (match_res[1] == "autoindex")
-			_addAutoIndex(line);
-		else if (match_res[1] == "session")
-			_addSession(line);
-		else if (match_res[1] == "allow_methods" || match_res[1] == "methods")
-			_addMethods(line);
-		else if (match_res[1] == "return")
-			_addRedirect(line);
-		else if (match_res[1] == "upload")
-			_addUpload(line);
-		else if (match_res[1] == "cgi_pass")
-			_addCgi(line);
-		else
-			throw std::runtime_error(
-				"parseLocation: Unknown element in location block: " +
-				line);
+		
+		std::string keyword = match_res[1];
+		try {
+			if (keyword == "root")
+				_addRoot(line);
+			else if (keyword == "index")
+				_addIndex(line);
+			else if (keyword == "autoindex")
+				_addAutoIndex(line);
+			else if (keyword == "session")
+				_addSession(line);
+			else if (keyword == "allow_methods" || keyword == "methods")
+				_addMethods(line);
+			else if (keyword == "return")
+				_addRedirect(line);
+			else if (keyword == "upload")
+				_addUpload(line);
+			else if (keyword == "cgi_pass")
+				_addCgi(line);
+			else
+				std::cerr << "Unown element error in location block!" << std::endl;
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "⚠️ Error parsing line: " << line << " -" << e.what() << std::endl;
+		}
+			//throw std::runtime_error(
+			//	"parseLocation: Unknown element in location block: " +
+			//	line);
 	}
 
 	// We don't want to do this as it is too strict and can create a crash if not clean user input	
