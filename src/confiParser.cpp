@@ -128,7 +128,7 @@ size_t parseBody(const std::string& value)
 	try
 	{
 		size_t size = std::stoul(n) * multip;
-		if (size > 1048576 || size < 0)
+		if (size > 1048576 )
 		{
 			std::cerr << "⚠️ Warning! Max body is 1M, so it was set as 1M" << std::endl;
 			return 1048576;

@@ -295,7 +295,7 @@ void Served::runEventloop()
 		
 			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn->getLastActivity()).count();
 			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
-			if ( duration > 6000)
+			if ( duration > 10)
 			{
 				std::cout<< "Client: " << cfd << " timeout." << std::endl;
 				close (cfd);
