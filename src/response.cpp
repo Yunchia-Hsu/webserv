@@ -145,12 +145,22 @@ void Response::create_response(int status)
 	buffer << bs;
 }
 
-
+/*
+	INKA CHANGED THIS A BIT ! To hande the changed root folder and similar cases
+*/
 int Response::handle_get(void)
 {
-	std::string filename = _location->_rootPath + _request->_uri;
+	//Check the folders and root
+	std::string path_inside_location = _request->_uri;
+	if (path_inside_location.find(_location->_path) == 0)
+		path_inside_location = path_inside_location.substr(_location->_path.size());
+	if (path_inside_location.empty() || path_inside_location[0] != '/')
+		path_inside_location = "/" + path_inside_location;
+
+	std::string filename = _location->_rootPath + path_inside_location;
 	//filename = filename +"index.html";
-	std::cout<<"filename:---------------------"<<filename<<std::endl;
+
+	//std::cout<<"filename:---------------------"<<filename<<std::endl;
 	int flags = Io::file_stat(filename);
 
 	if (!flags)
