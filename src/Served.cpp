@@ -301,24 +301,25 @@ void Served::runEventloop()
 
 
 
-				// 1. 組裝 403 回應字串
-				std::string resp = 
-				"HTTP/1.1 403 Forbidden\r\n"
-				"Content-Type: text/html\r\n"
-				"Content-Length: 23\r\n"
-				"\r\n"
-				"<h1>403 Forbidden</h1>";
+				// // 1. 組裝 403 回應字串
+				// std::string resp = 
+				// "HTTP/1.1 403 Forbidden\r\n"
+				// "Content-Type: text/html\r\n"
+				// "Content-Length: 23\r\n"
+				// "\r\n"
+				// "<h1>403 Forbidden</h1>";
 	
-				// 2. 直接透過 socket 發送回應
-				ssize_t sent = send(cfd, resp.c_str(), resp.size(), 0);
-				if (sent < 0) {
-					std::cerr << "❌ Error sending 403 to client " << cfd 
-							<< ": " << strerror(errno) << std::endl;
-			}
+				// // 2. 直接透過 socket 發送回應
+				// ssize_t sent = send(cfd, resp.c_str(), resp.size(), 0);
+				// if (sent < 0) 
+				// {
+				// 	std::cerr << "❌ Error sending 403 to client " << cfd 
+				// 			<< ": " << strerror(errno) << std::endl;
+						
+				// }
 
 
 			
-
 
 				close (cfd);
 				it = clients.erase(it);
