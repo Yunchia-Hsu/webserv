@@ -232,21 +232,10 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			EXEPTION CHECKS:
 				check if line is empty, handle brackets, trim whitespace, remove  semicolons
 		*/
-		// std::cout<<"i----------------:"<<i<<":----------"<<line<<std::endl;
 		i++;
 		size_t start = line.find_first_not_of(" \t");
 		if (start != std::string::npos)
 			line = line.substr(start);
-
-		/*
-		//old version
-		if (line.empty() || line == "{" || line[0] == '#')
-			continue ;
-
-		if (line.find("}") == 0)
-			return ;
-		*/
-		//new version
 		if (line.empty() || line[0] == '#')
 			continue ;
 		if (line.find("{") != std::string::npos)
@@ -270,14 +259,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		std::string value = line.substr(spaces + 1);
 
 		if (!value.empty() && value.back() == ';')
-			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen
-
-
-		/*
-			21.4
-			ADDED HERE the location handler to save all the locations!
-		*/
-	
+			value.pop_back();
 		if (keyWord == "location")
 		{
 			//THIS IS PROBABLY NOT NEEDED!!!!
@@ -303,13 +285,11 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			//test lines:
 		
 			std::shared_ptr<Location> location(new Location(&server));
-//			std::cout << "pppppppppppppppppppath: " << path <<std::endl;
 			location->parseLocation(file, line);
-			
-			if (!location->_methods.empty())
-				std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
-			else
-				std::cout << "EMPTY EMPYT EMPTY" << std::endl;
+
+			//Test print for location { lines inside }
+//			if (!location->_methods.empty())
+//				std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
 			server.locations.push_back(location);
 		}
 
@@ -388,7 +368,7 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		server.clientMaxBodySize = "1M";
 	}
 
-	server.printConfig(); // DEBUGPRINT
+//	server.printConfig(); // DEBUGPRINT
 }
 
 void ConfiParser::routeKeys(const std::string& keyWord, const std::string& value, RouteConf& route)
@@ -515,7 +495,7 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 			route.nestedRoutes.push_back(nestedRoute);
 		}
 	}
-	route.printConfig(); // DEBUGPRINT
+//	route.printConfig(); // DEBUGPRINT
 }
 
 //DEBUG FUNCTION
