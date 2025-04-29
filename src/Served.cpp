@@ -247,7 +247,7 @@ void Served::runEventloop()
 		}
 		
 		///test///
-		std::cout << "&& connected clients: &&\n";
+	//	std::cout << "&& connected clients: &&\n";
 
 	
 		for (auto it = clients.begin(); it != clients.end(); ++it) {

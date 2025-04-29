@@ -62,9 +62,7 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 	while (Utils::skipEmptyLines(configFile, line), configFile)
 	{
 
-		std::cout << "[LocationParser Line] " << line << std::endl;
-
-
+//		std::cout << "[LocationParser Line] " << line << std::endl;
 		std::smatch match_res;
 		//std::regex ptrn("^\t{2}(\\w+).*");
 		std::regex ptrn("^\\s*(\\w+)\\s+.*");  // ALLOW spaces or tabs for stupid user input 
