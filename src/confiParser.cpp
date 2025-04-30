@@ -470,7 +470,7 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		std::string value = line.substr(spaces + 1);
 
 		if (!value.empty() && value.back() == ';')
-			value.pop_back(); //Removes the last element in the vector, effectively reducing the container size by one. This destroys the removed elemen		
+			value.pop_back();
 
 		routeKeys(keyWord, value, route);
 

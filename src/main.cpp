@@ -25,7 +25,6 @@ int main(int arc, char** arv)
         Served server(parser.getServers(), parser.portsToSockets);
 		std::vector<int> serverSockets;
         server.start();
-		//server.runEventloop(serverSockets);
 		server.runEventloop();
         server.cleanup();
 

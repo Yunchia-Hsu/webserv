@@ -145,9 +145,6 @@ void Response::create_response(int status)
 	buffer << bs;
 }
 
-/*
-	INKA CHANGED THIS A BIT ! To hande the changed root folder and similar cases
-*/
 int Response::handle_get(void)
 {
 	//Check the folders and root
@@ -165,7 +162,7 @@ int Response::handle_get(void)
 
 	if (!flags)
 	{
-		std::cout << "1hhhhhhhhhhhhhhhhhhhhhhhhhhhhere is the error place\n";
+		//std::cout << "1hhhhhhhhhhhhhhhhhhhhhhhhhhhhere is the error place\n";
 		return STATUS_NOT_FOUND;
 	}
 	if (!(flags & FS_READ))
@@ -189,7 +186,7 @@ int Response::handle_get(void)
 			return STATUS_INTERNAL_ERROR;
 		return STATUS_OK;
 	}
-	std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhere is the error place\n";
+	//std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhere is the error place\n";
 	return STATUS_NOT_FOUND;
 }
 
@@ -221,7 +218,8 @@ int Response::handle_post(void)
 	if (wrote)
 		return STATUS_CREATED;
 	if (!flags)
-	{std::cout << "aaaaaaaaaaaaaa--------------------------------: "  << std::endl;
+	{
+		//std::cout << "aaaaaaaaaaaaaa--------------------------------: "  << std::endl;
 		return STATUS_NOT_FOUND;
 	}
 	if (!(flags & FS_READ))
@@ -320,9 +318,7 @@ void Response::generate_error_page(int code)
 
 std::shared_ptr<Location> Response::find_location(void)
 {
-	// std::shared_ptr<Location> ret=_locations.front();
 	std::shared_ptr<Location> ret = _request->conf->getLocations().front();
-	// std::shared_ptr<Location> ret;
 	Location defaultpath;
 	
 	
@@ -330,7 +326,7 @@ std::shared_ptr<Location> Response::find_location(void)
 		return nullptr;
 	for (const auto &loc : _request->conf->getLocations())
 	{
-		std::cout << "lllllllllllllllllllllllllllocation: " << loc->_path << " request uri: " << _request->_uri << std::endl;
+//		std::cout << "lllllllllllllllllllllllllllocation: " << loc->_path << " request uri: " << _request->_uri << std::endl;
 		if (_request->_uri == loc->_path)
 		{
 			
@@ -347,7 +343,7 @@ std::shared_ptr<Location> Response::find_location(void)
 	
 	}
 	
-	std::cout << "2lllllllllllllllllllllllllllocation: " << ret->_path << " request uri: " << _request->_uri << std::endl;
+//	std::cout << "2lllllllllllllllllllllllllllocation: " << ret->_path << " request uri: " << _request->_uri << std::endl;
 	return ret;
 }
 
