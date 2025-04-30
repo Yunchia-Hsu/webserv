@@ -409,7 +409,7 @@ State ClientConnection::parse_status_line(void)
 	
 	_method_str = m[1];
 	_uri = Utils::url_decode(m[2]);
-	std::cout << "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuurl: " << _uri << std::endl;
+//	std::cout << "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuurl: " << _uri << std::endl;
 	_version = m[3];
 
 	if (method_map.count(_method_str) == 0)
@@ -503,11 +503,6 @@ State ClientConnection::parse_body(void)
 {
 	if (_headers.count("host") == 0)
 		return State::ERROR;
-	// if (conf && _buffer.size() > conf->getMaxSize())
-	// {
-	// 	this->parse_error = STATUS_TOO_LARGE;
-	// 	return State::ERROR;
-	// }
 	if (_body_type == BODY_TYPE_CHUNKED)
 		return State::CHUNKED;
 	bool has_length = _headers.count("content-length");
@@ -642,7 +637,6 @@ bool ClientConnection::is_method_allowed(std::vector<std::string> allowed, std::
 
 	if (std::find(allowed.begin(), allowed.end(), method) == allowed.end())
 	{
-		
 		return false;
 	}
 	return true;
