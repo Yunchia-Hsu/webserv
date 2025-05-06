@@ -62,7 +62,7 @@ void Served::start()//將不同port存入不同的vector
 		server_addr.sin_family = AF_INET;//ipv4
 		server_addr.sin_addr.s_addr = INADDR_ANY;//all web address
 		server_addr.sin_port = htons(serverPort);
-
+		
 		if (bind(serverFd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0)
 		{
 			std::cerr << "fd:" << serverFd <<  "❌ Error: failed to bind port " << serverPort << std::endl;
@@ -81,11 +81,16 @@ void Served::start()//將不同port存入不同的vector
 		_socketFdToServerConf[serverFd] = std::make_shared<ServerConf>(servers[i]);
 		_socketToPort[serverFd] = serverPort;
 
-		if (serverSockets.empty()) 
-		{
-			std::cerr << "❌ Error: no server sockets created" << std::endl;
-			return ;
-		}
+		// if (serverSockets.empty()) 
+		// {
+		// 	std::cerr << "❌ Error: no server sockets created" << std::endl;
+		// 	return ;
+		// }
+	}
+	if (serverSockets.empty()) 
+	{
+		std::cerr << "❌ Error: no server sockets created" << std::endl;
+		return std::exit(EXIT_FAILURE);
 	}
 }
 

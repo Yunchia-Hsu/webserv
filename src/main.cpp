@@ -20,7 +20,7 @@ int main(int arc, char** arv)
 {
     // Register SIGINT handler
     std::signal(SIGINT, handle_sigint);
-
+	
 	if (arc != 2)
     {
         std::cout << "Input is not inputting correctly!" << std::endl;
