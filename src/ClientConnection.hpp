@@ -114,16 +114,11 @@ private:
 public:
 
     int fd;
-    std::string writeBuffer; // 儲存待傳送給客戶端的資料
+    std::string writeBuffer; // save the data which will sent to client
     std::string sendBuffer; //
-    size_t writeOffset = 0;// 已經送了多少
+    size_t writeOffset = 0;// data already sent
     std::chrono::time_point<std::chrono::steady_clock> lastActivity;
-	
-
-    // ConnectionState state;
-	int serverPort;  // 新增：用於存儲服務器端口
-    // ConnectionState state;
-
+	int serverPort;  
     Served *serve;
 
     size_t _bytes_read;
@@ -140,8 +135,9 @@ public:
     bool needWrite ();
     bool needRead ();
     ClientConnection(int cfd, int port, Served *serve);
-    int readData(); //要進一步確保HTTP request 是完整的
-   int checkend(std::string str, std::string end); //return 0 done, 1 not done
+	//ClientConnection(int cfd, std::shared_ptr<ServerConf> serverConf, Served* serve);
+    int readData();
+   	int checkend(std::string str, std::string end); //return 0 done, 1 not done
     void appendToWriteBuffer(const std::string &data);
     int writeData();
     // int writeData(std::shared_ptr<ClientConnection> client);
@@ -159,7 +155,6 @@ public:
 	std::chrono::steady_clock::time_point getLastActivity() const;
 	
 	void clean();
-
     void cleanup_child();
 
     State _state;

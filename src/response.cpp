@@ -10,7 +10,7 @@ Response::Response(std::shared_ptr<ClientConnection> client)
 	_status_code(STATUS_NOT_FOUND)
 {
 	//this->_client = client;
-	std::cout << "so it is hereeeeeeeeeeeeeeeeeeeeeeeeee" <<std::endl;
+	//std::cout << "so it is hereeeeeeeeeeeeeeeeeeeeeeeeee" <<std::endl;
 	int error_code = this->has_errors();
 
 	if (error_code)
