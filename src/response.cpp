@@ -308,12 +308,24 @@ void Response::set_error_page(int code)
 void Response::generate_error_page(int code)
 {
 	std::string msg = std::to_string(code) + " " + code_map[code];
+
 	_body << "<!DOCTYPE html><html><head><title>";
-	_body << "This is the error!!! " << msg;
-	_body << "</title></head><body><h1>";
 	_body << msg;
-	_body << "</h1></body></html>";
+	_body << "</title>";
+	_body << "<style>"
+	      << "body { display: flex; justify-content: center; align-items: center; "
+	      << "height: 100vh; margin: 0; font-family: Arial, sans-serif; background-color: #f0f0f0; }"
+	      << "div { text-align: center; }"
+	      << "h1 { font-size: 2em; color: #cc0000; }"
+	      << "p { font-size: 1.2em; }"
+	      << "</style></head><body>";
+	_body << "<div>";
+	_body << "<p>This is the error!!!</p>";
+	_body << "<h1>" << msg << "</h1>";
+	_body << "</div>";
+	_body << "</body></html>";
 }
+
 
 std::shared_ptr<Location> Response::find_location(void)
 {
