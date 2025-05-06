@@ -573,49 +573,54 @@ void ClientConnection::parse_multipart(void)
 	std::regex ptrn(".*boundary=(.*)");
 	std::smatch match_res;
 
-	if (!std::regex_match(_headers["content-type"], match_res, ptrn))
-	{
+	if (!std::regex_match(_headers["content-type"], match_res, ptrn)) {
 		this->_state = State::ERROR;
 		return;
 	}
-	std::string boundary = "--";
-	boundary += match_res[1];
-	boundary += "\r\n";
+	std::string boundary = "--" + match_res[1].str();
+	std::string closing_boundary = boundary + "--";
 
-	size_t pos = 0, end = 0, header_end = 0;
-	while ((pos = _buffer.find(boundary, pos)) != std::string::npos)
-	{
-		if ((end = _buffer.find(boundary, pos += boundary.size())) ==
-		    std::string::npos)
+	size_t start = 0;
+	while (true) {
+		size_t part_start = _buffer.find(boundary, start);
+		if (part_start == std::string::npos)
 			break;
-		size_t buf_size = end - pos;
-		if (end - pos >= 2)
-			buf_size -= 2;
-		std::string part_buf = _buffer.substr(pos, buf_size);
-		pos = end;
-		if ((header_end = part_buf.find("\r\n\r\n")) == std::string::npos)
+		part_start += boundary.length();
+
+		// Skip \r\n after boundary
+		if (_buffer.substr(part_start, 2) == "\r\n")
+			part_start += 2;
+
+		size_t part_end = _buffer.find(boundary, part_start);
+		if (part_end == std::string::npos) {
+			part_end = _buffer.find(closing_boundary, part_start);
+			if (part_end == std::string::npos)
+				break;
+		}
+
+		std::string part_buf = _buffer.substr(part_start, part_end - part_start);
+		start = part_end;
+
+		size_t header_end = part_buf.find("\r\n\r\n");
+		if (header_end == std::string::npos)
 			continue;
 
 		struct Part part;
 		part.data = part_buf.substr(header_end + 4);
-		part_buf.erase(header_end);
-		part.name = Utils::get_key_data(part_buf, "name");
-		part.filename = Utils::get_key_data(part_buf, "filename");
-		part.content_type = Utils::safe_substr(part_buf, "Content-Type: ", CRLF);
+		std::string headers = part_buf.substr(0, header_end);
+		part.name = Utils::get_key_data(headers, "name");
+		part.filename = Utils::get_key_data(headers, "filename");
+		part.content_type = Utils::safe_substr(headers, "Content-Type: ", CRLF);
+
 		if (part.filename.empty() || part.data.empty())
 			continue;
 
-		/*
-		std::cout << "part.name: " << part.name << std::endl;
-		std::cout << "part.filename: " << part.filename << std::endl;
-		std::cout << "part.content_type: " << part.content_type << std::endl;
-		std::cout << "part.data.size: " << part.data.size() << std::endl;
-		*/
 		this->parts.push_back(part);
 	}
 	_state = State::OK;
 	_buffer.clear();
 }
+
 
 void ClientConnection::check_body_limit(void)
 {

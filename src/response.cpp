@@ -193,6 +193,7 @@ int Response::handle_get(void)
 int Response::handle_post(void)
 {
 	std::string filename = _location->_rootPath + _request->_uri;
+	// std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhellllllooooooooooooo: " << filename << std::endl;
 	bool wrote = false;
 
 	if (_request->_body_type == BODY_TYPE_CHUNKED &&
@@ -205,6 +206,7 @@ int Response::handle_post(void)
 	}
 	int flags = Io::file_stat(filename);
 
+	std::cout << "______________request->parts: " << _request->parts.size() << std::endl;
 	for (auto &part : _request->parts)
 	{
 		if (_location->_uploadPath.empty())
@@ -218,10 +220,7 @@ int Response::handle_post(void)
 	if (wrote)
 		return STATUS_CREATED;
 	if (!flags)
-	{
-		//std::cout << "aaaaaaaaaaaaaa--------------------------------: "  << std::endl;
 		return STATUS_NOT_FOUND;
-	}
 	if (!(flags & FS_READ))
 		return STATUS_FORBIDDEN;
 	return STATUS_OK;
@@ -293,24 +292,24 @@ void Response::set_error_page(int code)
 	*/
 	_additional_headers["Content-Type"] = "text/html";
 
-	// if (!_request->conf || _request->conf->_errorPages.count(code) == 0)           //will check it later/////////////
-	// {
-	// 	generate_error_page(code);
-	// 	return;
-	// }
+	if (!_request->conf || _request->conf->errorPages.count(code) == 0)           //will check it later/////////////
+	{
+		generate_error_page(code);
+		return;
+	}
 
-	// std::string page_path = _request->conf->_errorPages[code];
-	// if (!Io::read_file(page_path, _body))
-	// {
-	// 	generate_error_page(code);
-	// }
+	std::string page_path = _request->conf->errorPages[code];
+	if (!Io::read_file(page_path, _body))
+	{
+		generate_error_page(code);
+	}
 }
 
 void Response::generate_error_page(int code)
 {
 	std::string msg = std::to_string(code) + " " + code_map[code];
 	_body << "<!DOCTYPE html><html><head><title>";
-	_body << msg;
+	_body << "This is the error!!! " << msg;
 	_body << "</title></head><body><h1>";
 	_body << msg;
 	_body << "</h1></body></html>";
@@ -343,7 +342,7 @@ std::shared_ptr<Location> Response::find_location(void)
 	
 	}
 	
-//	std::cout << "2lllllllllllllllllllllllllllocation: " << ret->_path << " request uri: " << _request->_uri << std::endl;
+	// std::cout << "2lllllllllllllllllllllllllllocation: " << ret->_path << " request uri: " << _request->_uri << std::endl;
 	return ret;
 }
 

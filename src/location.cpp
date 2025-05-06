@@ -254,6 +254,7 @@ void Location::_addUpload(std::string &line)
 			"_addUpload: Specified path isn't a directory!"));
 	_uploadPath = match_res[1];
 	_uploadPath = std::filesystem::canonical(_uploadPath).generic_string();
+	// std::cout << "___________________________uploadPath: " << _uploadPath << std::endl;
 }
 
 void Location::_addCgi(std::string &line)
