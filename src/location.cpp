@@ -240,11 +240,7 @@ void Location::_addRedirect(std::string &line)
 
 void Location::_addUpload(std::string &line)
 {
-//	std::regex ptrn("\t{2}upload\\s+(.*)\\s*;\\s*");
-	// we don't want ';' at the end of the lines
-	std::regex ptrn("^\\s*upload\\s+([^\\s;]+)\\s*;?\\s*$");
-
-
+	std::regex ptrn("\t{2}upload\\s+(.*)\\s*");
 	std::smatch match_res;
 	struct stat mode;
 
@@ -264,28 +260,63 @@ void Location::_addUpload(std::string &line)
 	// std::cout << "___________________________uploadPath: " << _uploadPath << std::endl;
 }
 
+// void Location::_addCgi(std::string &line)
+// {
+// 	// Accept: "cgi_pass /path/to/interpreter;"
+// 	std::regex ptrn("^\\s*cgi_pass\\s+([^\\s]+)\\s*;?\\s*$");
+// 	std::smatch match_res;
+// 	struct stat mode;
+
+// 	if (!_cgi.empty())
+// 		throw std::runtime_error("_addCgi: Cannot add location cgi multiple times!");
+
+// 	if (!std::regex_match(line, match_res, ptrn))
+// 		throw std::runtime_error("_addCgi: Expected format: \"cgi_pass /path/to/interpreter;\"");
+
+// 	std::string path = match_res[1];
+// 	if (stat(path.c_str(), &mode) != 0)
+// 		throw std::runtime_error("_addCgi: Specified path doesn't exist: " + path);
+
+// 	if (!S_ISREG(mode.st_mode))
+// 		throw std::runtime_error("_addCgi: Specified path isn't a file!");
+
+// 	// You can set this to a default extension like .bla
+// 	_cgi[".bla"] = path;
+// }
+
 void Location::_addCgi(std::string &line)
 {
-	// Accept: "cgi_pass /path/to/interpreter;"
-	std::regex ptrn("^\\s*cgi_pass\\s+([^\\s]+)\\s*;?\\s*$");
-	std::smatch match_res;
+	std::regex ptrn_global("^\\s*cgi_pass(\\s+\\S+\\s+\\S+)+\\s*;?\\s*$");
+	std::regex ptrn_local("(\\.\\w+)\\s+([^\\s;]+)");
 	struct stat mode;
 
 	if (!_cgi.empty())
 		throw std::runtime_error("_addCgi: Cannot add location cgi multiple times!");
+	if (!std::regex_match(line, ptrn_global))
+		throw std::runtime_error("_addCgi: Expected format: \"cgi [list of cgi key value pairs];\"");
 
-	if (!std::regex_match(line, match_res, ptrn))
-		throw std::runtime_error("_addCgi: Expected format: \"cgi_pass /path/to/interpreter;\"");
+	for (std::sregex_iterator itr = std::sregex_iterator(line.begin(), line.end(), ptrn_local);
+	     itr != std::sregex_iterator(); ++itr)
+	{
+		std::string ext = itr->str(1);
+		std::string path = itr->str(2);
 
-	std::string path = match_res[1];
-	if (stat(path.c_str(), &mode) != 0)
-		throw std::runtime_error("_addCgi: Specified path doesn't exist: " + path);
+		std::cout << "ssssssso, ext is: " << ext << " and path is: " << path << std::endl;
 
-	if (!S_ISREG(mode.st_mode))
-		throw std::runtime_error("_addCgi: Specified path isn't a file!");
+		if (!path.empty() && path.back() == ';')
+			path.pop_back();
 
-	// You can set this to a default extension like .bla
-	_cgi[".bla"] = path;
+		if (_cgi.count(ext))
+			throw std::runtime_error("_addCgi: Duplicate CGI key: " + ext);
+
+		if (stat(path.c_str(), &mode) != 0)
+			throw std::runtime_error("_addCgi: Specified path doesn't exist: " + path);
+		if (!S_ISREG(mode.st_mode))
+			throw std::runtime_error("_addCgi: Specified path isn't a regular file: " + path);
+
+		std::cout << "✅ Registered CGI: " << ext << " → " << path << std::endl;
+		_cgi.insert(std::make_pair(ext, path));
+	}
 }
 
 void Location::_addClientBodySize(const std::string& line)

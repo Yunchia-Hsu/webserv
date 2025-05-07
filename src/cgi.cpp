@@ -11,7 +11,12 @@ Cgi::Cgi(std::shared_ptr<Location> location, std::shared_ptr<ClientConnection> r
 {
 	_document_root = location->_rootPath;
 	std::string ext = Io::get_file_ext(request->_uri);
-	_interpreter = cgi_map[ext];
+	std::cout << "The current CGI is: " << ext << std::endl;
+	if (location->_cgi.count(ext))
+		_interpreter = location->_cgi[ext];
+	else
+		throw std::runtime_error("CGI extension not supported: " + ext);
+	std::cout << "The current interpreter is: " << _interpreter << std::endl;
 
 	try {
 	std::filesystem::path p = location->_rootPath;
@@ -157,13 +162,26 @@ bool Cgi::start(std::shared_ptr<ClientConnection> client)
 		exit(1);
 	}
 
+	std::cout << "CGI pid: " << pid
+          << ", fd_from[0]: " << fd_from[0] << " (read from CGI)"
+          << ", fd_from[1]: " << fd_from[1]
+          << ", fd_to[0]: " << fd_to[0]
+          << ", fd_to[1]: " << fd_to[1] << " (write to CGI)"
+          << std::endl;
+
 	ret = parent_init(pid, fd_from, fd_to);
-	// if (ret)                                                     // Will check it later/////////////////////
-	// {
-	// 	client->cgi_read_fd = fd_from[READ];
-	// 	client->cgi_write_fd = fd_to[WRITE];
-	// 	client->pid = pid;
-	// }
+	if (ret)                                                     // Will check it later/////////////////////
+	{
+		// std::cout << "hhhhhhhhhhhhhere\n";
+		client->cgi_fd_read = fd_from[READ];
+		client->cgi_fd_write = fd_to[WRITE];
+		client->pid = pid;
+
+		if (client->_method == METHOD_GET && client->cgi_fd_write >= 0) {
+			close(client->cgi_fd_write);
+			client->cgi_fd_write = -1;
+		}
+	}
 	return ret;
 }
 
@@ -200,13 +218,16 @@ void Cgi::close_pipes(int *fd)
 
 bool Cgi::is_cgi(std::shared_ptr<Location> location, std::string uri)
 {
+	// std::cout << "llllllllet me seesee\n";
 	if (!location)
 		return false;
 
 	std::string cgi_uri = location->_rootPath + uri;
 	std::string ext = Io::get_file_ext(cgi_uri);
+	std::cout << "dddddllllllllet me seesee: " << ext << std::endl;
 	if (location->_cgi.count(ext) == 0)
 		return false;
+	std::cout << "wwwwssllllllllet me seesee\n";
 	int flags = Io::file_stat(cgi_uri);
 	if (!(flags & FS_ISFILE) || !(flags & FS_READ))
 		return false;

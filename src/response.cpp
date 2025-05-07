@@ -28,12 +28,14 @@ Response::Response(std::shared_ptr<ClientConnection> client)
 
 	if (Cgi::is_cgi(_location, _request->_uri))
 	{
+		std::cout << "llllllllet me seesee\n";
 		if (!init_cgi(client))
 		{
 			_status_code = STATUS_INTERNAL_ERROR;
 			finish_response();
 			return;
 		}
+		std::cout << "don't llllllllet me seesee\n";
 		_status_code = STATUS_OK;
 		return;
 	}
@@ -206,7 +208,7 @@ int Response::handle_post(void)
 	}
 	int flags = Io::file_stat(filename);
 
-	std::cout << "______________request->parts: " << _request->parts.size() << std::endl;
+	// std::cout << "______________request->parts: " << _request->parts.size() << std::endl;
 	for (auto &part : _request->parts)
 	{
 		if (_location->_uploadPath.empty())
@@ -272,6 +274,10 @@ bool Response::init_cgi(std::shared_ptr<ClientConnection> client)
 		return false;
 	}
 	client->conn_type = CONN_WAIT_CGI;
+	std::cout << "client pid: " << client->pid
+          << ", client->cgi_fd_read: " << client->cgi_fd_read << " (read from CGI)"
+          << ", client->cgi_fd_write: " << client->cgi_fd_write << " (write to CGI)"
+          << std::endl;
 	return true;
 }
 

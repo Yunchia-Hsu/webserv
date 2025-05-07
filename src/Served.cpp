@@ -127,15 +127,16 @@ void Served::set_config(std::shared_ptr<ClientConnection>  client){
 	std::cout << "port: " << port << std::endl;
 	std::vector <std::shared_ptr<ServerConf>> configs = matching_configs(port);
 	client->conf = configs.front();
-	std::cout << "hhhhhhhhhhhhhhhhhhhost name: " << host << std::endl;
-	std::cout << "--------------------------------- SIZE: " << configs.size() << std::endl;
+	// std::cout << "hhhhhhhhhhhhhhhhhhhost name: " << host << std::endl;
+	// std::cout << "--------------------------------- SIZE: " << configs.size() << std::endl;
 	std::vector<std::string> servernames;
 	for (const auto &c : configs)
 	{
 		// std::cout << "hereeeeeeeeeeeeeeeeeeeee" << std::endl;
 		// c->printConfig();
 		for(std::string c : c->serverNames)
-		{	std::cout << "HostName: " << c << std::endl;
+		{	
+			// std::cout << "HostName: " << c << std::endl;
 			servernames.push_back(c);
 		}
 			// std::cout << "Thereeeeeeeeeeeeeeeeeeeee" << std::endl;
@@ -226,16 +227,85 @@ void Served::runEventloop()
 				
 			if (conn->needWrite() == true)
 				FD_SET(clientfd, &writeSet);
-				
+			
+			if (conn->conn_type == CONN_WAIT_CGI) {
+				std::cout << "in client part, sswwlllllllet me seesee: " << conn->cgi_fd_read << " " << conn->cgi_fd_write << std::endl;
+				if (conn->cgi_fd_read >= 0)
+					FD_SET(conn->cgi_fd_read, &readSet);
+				if (conn->cgi_fd_write >= 0 && conn->has_pending_write_to_cgi())
+				{
+					std::cout << "sswwlllllllet me seesee\n";
+					FD_SET(conn->cgi_fd_write, &writeSet);
+				}
+		
+				if (conn->cgi_fd_read > maxfd)
+					maxfd = conn->cgi_fd_read;
+				if (conn->cgi_fd_write > maxfd)
+					maxfd = conn->cgi_fd_write;
+			}
+
 			if (clientfd > maxfd)
 					maxfd = clientfd;
 		}
 		
 	
 		for (auto it = clients.begin(); it != clients.end(); ++it) {
-			std::cout << it->first << " ";
-			
-			
+			std::cout << "so here is something for CGI: " << it->first << " ";
+			int cfd = it->first;
+			std::shared_ptr<ClientConnection> conn = it->second;
+			if (FD_ISSET(cfd, &readSet) && conn->conn_type == CONN_WAIT_CGI){
+				// CGI is ready to be read
+				if (conn->cgi_fd_read >= 0 && FD_ISSET(conn->cgi_fd_read, &readSet)) {
+					char buffer[4096];
+					ssize_t n = recv(conn->cgi_fd_read, buffer, sizeof(buffer), 0);
+					if (n > 0) {
+						conn->cgi_buffer.append(buffer, n);
+					} else {
+						close(conn->cgi_fd_read);
+						conn->cgi_fd_read = -1;
+
+						// Done reading CGI output, now send it to client
+						conn->response = conn->cgi_buffer;
+						conn->conn_type = CONN_REGULAR;
+					}
+				}
+			}
+			if (FD_ISSET(cfd, &writeSet) && conn->needWrite() && conn->conn_type == CONN_WAIT_CGI) {
+				std::cout << "in write part, sswwlllllllet me seesee: " << conn->cgi_fd_read << " " << conn->cgi_fd_write << std::endl;
+				if (conn->cgi_fd_read >= 0)
+					FD_SET(conn->cgi_fd_read, &readSet);
+				if (conn->cgi_fd_write >= 0 && conn->has_pending_write_to_cgi())
+				{
+					// std::cout << "sswwlllllllet me seesee\n";
+					FD_SET(conn->cgi_fd_write, &writeSet);
+				}
+		
+				maxfd = std::max({maxfd, conn->cgi_fd_read, conn->cgi_fd_write});
+				// if (conn->cgi_fd_read > maxfd)
+				// 	maxfd = conn->cgi_fd_read;
+				if (conn->cgi_fd_write > maxfd)
+					maxfd = conn->cgi_fd_write;
+				if (conn->cgi_fd_write >= 0 && FD_ISSET(conn->cgi_fd_write, &writeSet)) {
+					std::cout << "at least should come to hereeeeeeeee\n";
+					ssize_t n = send(conn->cgi_fd_write,
+						conn->_body.data() + conn->cgi_write_offset,
+						conn->_body.size() - conn->cgi_write_offset,
+						0);
+					std::cout << "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn: " << n << " " << conn->_body.size() << std::endl;
+
+					if (n > 0) {
+						conn->cgi_write_offset += n;
+						if (conn->cgi_write_offset == conn->_body.size()) {
+							close(conn->cgi_fd_write);
+							conn->cgi_fd_write = -1;
+						}
+					} else {
+						std::cerr << "Error writing to CGI script\n";
+						close(conn->cgi_fd_write);
+						conn->cgi_fd_write = -1;
+					}
+				}
+			}
 		}
 	
 
@@ -263,24 +333,21 @@ void Served::runEventloop()
 		
 		//timeout control
 		auto now = std::chrono::steady_clock::now();
-		//const int TIMEOUT_SECONDS = 60;
-		for (auto it = clients.begin(); it != clients.end();) 
+		// const int TIMEOUT_SECONDS = 60;
+		for (auto it = clients.begin(); it != clients.end(); ++it) 
 		{
 			int cfd = it->first;
 			std::shared_ptr<ClientConnection> conn = it->second;
 		
 			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn->getLastActivity()).count();
-			//std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
+			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
+			// std::shared_ptr<ClientConnection>& conn = it->second;
 			if ( duration > 10)
 			{
 				std::cout<< "Client: " << cfd << " timeout." << std::endl;
 				close (cfd);
 				it = clients.erase(it);
 				continue;
-			}
-			else
-			{
-				++it;
 			}
 		}
 		
@@ -318,7 +385,11 @@ void Served::runEventloop()
 			}
 		}
 
-		//check all client FD if there is anything to read
+		
+
+		//檢查所有現有 client FD，是否可讀
+		// auto it = clients.begin();
+		// while (it != clients.end())
 		for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
 			int cfd = it->first;
@@ -368,7 +439,6 @@ void Served::runEventloop()
 			//if (!closed && FD_ISSET(cfd, &writeSet) )
 			if (FD_ISSET(cfd, &writeSet) && conn->needWrite())
 			{
-				// int sent = conn.writeData();
 				int sent = 0;
 				if (!conn->resp) {
 					conn->resp = std::make_shared<Response>(conn);
