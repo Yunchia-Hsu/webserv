@@ -20,6 +20,7 @@ class Location {
 	std::map<std::string, std::string> _cgi;
 	bool _session;
 	bool _sessionSet;
+	size_t clientMaxBodySize;
 
 	Location(ServerConf *serverConfig);
 	Location(const Location &original);
@@ -38,6 +39,7 @@ class Location {
 	void _addUpload(std::string &line);
 	void _addCgi(std::string &line);
 	void _addSession(std::string &line);
+	void _addClientBodySize(const std::string& line);
 
 	bool getAutoIndex();
 	void dump(void);

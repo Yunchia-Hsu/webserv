@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <csignal>
+#include <iostream>
 
 enum {
 	STATUS_OK = 200,
@@ -94,4 +95,6 @@ class Utils {
 	static void skipEmptyLines(std::ifstream &configFile, std::string &line);
 	static std::string leftWspcTrim(std::string string);
 	static std::string rightWspcTrim(std::string string);
+	static std::string trimLine(const std::string& str);
+	static size_t parseBody(const std::string& value);
 };

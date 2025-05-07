@@ -1,14 +1,13 @@
 
 #include "Served.hpp"
 #include <fcntl.h>    // For fcntl(), F_GETFL, F_SETFL, O_NONBLOCK  
+
 Served::Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets) : servers(parsedServers) {
 	_portsToSockets = portToSockets;
-	std::cout << "server lengthhhhhhhhhhhhhhh: " << servers.size() << std::endl;
-	// _locations = locations;
-	// std::cout << "Here is the locations lallalaalalalalala:" << _locations[0];
+	//std::cout << "server lengthhhhhhhhhhhhhhh: " << servers.size() << std::endl;
 }
 
-
+Served::~Served(){}
 
 void	*ft_memcpy(void *dst, const void *src, size_t n)
 {
@@ -28,17 +27,12 @@ void	*ft_memcpy(void *dst, const void *src, size_t n)
 }
 
 
-//建立 Socket 與 Bind + Listen
+//build, bind Sockets and Listen
 void Served::start()//將不同port存入不同的vector
 {
-	// std::vector<int> serverSockets;
-
-
 	for (size_t i = 0; i < servers.size(); i++)
 	{
-		
 		int serverPort = servers[i].port;
-
 		// for linux
 		int serverFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
@@ -48,7 +42,6 @@ void Served::start()//將不同port存入不同的vector
 		// flags |= O_NONBLOCK;
 		// fcntl(serverFd, F_SETFL, flags);
 		//for mac
-
 
 		if (serverFd == -1)
 		{
@@ -63,22 +56,19 @@ void Served::start()//將不同port存入不同的vector
             continue;
         }
 
-		
-
 		struct sockaddr_in server_addr;
 		std::memset(&server_addr, 0, sizeof(server_addr));
 		
 		server_addr.sin_family = AF_INET;//ipv4
 		server_addr.sin_addr.s_addr = INADDR_ANY;//all web address
 		server_addr.sin_port = htons(serverPort);
-
+		
 		if (bind(serverFd, (sockaddr*)&server_addr, sizeof(server_addr)) < 0)
 		{
 			std::cerr << "fd:" << serverFd <<  "❌ Error: failed to bind port " << serverPort << std::endl;
 			close(serverFd);
 			continue ;
 		}
-
 
 		if (listen(serverFd, 1000) < 0)
 		{
@@ -91,15 +81,17 @@ void Served::start()//將不同port存入不同的vector
 		_socketFdToServerConf[serverFd] = std::make_shared<ServerConf>(servers[i]);
 		_socketToPort[serverFd] = serverPort;
 
-		if (serverSockets.empty()) 
-		{
-			std::cerr << "❌ Error: no server sockets created" << std::endl;
-			return ;
-		}
-		
-		
+		// if (serverSockets.empty()) 
+		// {
+		// 	std::cerr << "❌ Error: no server sockets created" << std::endl;
+		// 	return ;
+		// }
 	}
-
+	if (serverSockets.empty()) 
+	{
+		std::cerr << "❌ Error: no server sockets created" << std::endl;
+		return std::exit(EXIT_FAILURE);
+	}
 }
 
 std::vector<std::shared_ptr<ServerConf>> Served::matching_configs(int port){
@@ -198,15 +190,13 @@ const char* sstate_to_string(State s) {
     }
 }
 
-// void WebServed::runEventloop(std::vector<int> &serverSockets)
 void Served::runEventloop()
 {
 	// save client info in a map
-	//std::map<int, ClientConnection> clients;
-	std::cout << "Eventloop 🚀" << std::endl;
+	//std::cout << "Eventloop 🚀" << std::endl;
 	while(true)
 	{
-		//1.建立並清空 readSet, writeSet。
+		//1.build and cleanup readSet, writeSet。
 		fd_set readSet, writeSet;
 		FD_ZERO(&readSet);
 		FD_ZERO(&writeSet);
@@ -216,11 +206,9 @@ void Served::runEventloop()
 		timeout.tv_sec = 1;
 		timeout.tv_usec = 0;
 
-
-		//2.將「所有 server socket」加入 readSet，以便檢查是否有新連線要 accept()。
+		//2.add all serverSockets in readSet，so we can check new connection by accept()。
 		for (size_t i = 0; i < serverSockets.size(); i++)
 		{
-			
 			int serverfd = serverSockets[i];
 			//std::cout << "serverfd: " << serverfd << std::endl;
 			FD_SET(serverfd, &readSet);
@@ -228,12 +216,9 @@ void Served::runEventloop()
 				maxfd = serverfd;
 		}
 		
-		
-		//3.將「所有已連線的 client socket」根據需要讀/寫的狀況加入 readSet / writeSet。
-		
+		//3.add all client socket」 into readSet or writeSet。
 		for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it= clients.begin(); it!= clients.end(); ++it)
 		{
-			
 			int clientfd = it->first;
 			std::shared_ptr<ClientConnection> &conn = it->second;
 			if (conn->needRead()== true)
@@ -246,20 +231,13 @@ void Served::runEventloop()
 					maxfd = clientfd;
 		}
 		
-		///test///
-	//	std::cout << "&& connected clients: &&\n";
-
 	
 		for (auto it = clients.begin(); it != clients.end(); ++it) {
 			std::cout << it->first << " ";
 			
 			
 		}
-		//std::cout << std::endl;
-		// if (clients.empty())
-		// {
-		// 	std::cerr << "❌ Error: clients empty" << std::endl;
-		// }
+	
 
 
 
@@ -269,14 +247,12 @@ void Served::runEventloop()
 		// 		std::cout << "🔍 server socket fd: " << serverSockets[i] << std::endl;
 		// 	}
 		
-
 		int readycount = select(maxfd + 1, &readSet, &writeSet, NULL, &timeout);
 		// std::cout << "readycount: " << readycount << std::endl;
 		if (readycount < 0)
 		{
 			std::cerr<< "Error: select()" << std::endl;
 			//close fd
-			
 			for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
 				close(it->first);
@@ -287,14 +263,14 @@ void Served::runEventloop()
 		
 		//timeout control
 		auto now = std::chrono::steady_clock::now();
-		// const int TIMEOUT_SECONDS = 60;
+		//const int TIMEOUT_SECONDS = 60;
 		for (auto it = clients.begin(); it != clients.end();) 
 		{
 			int cfd = it->first;
 			std::shared_ptr<ClientConnection> conn = it->second;
 		
 			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn->getLastActivity()).count();
-			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
+			//std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
 			if ( duration > 10)
 			{
 				std::cout<< "Client: " << cfd << " timeout." << std::endl;
@@ -315,14 +291,11 @@ void Served::runEventloop()
 		//5.handle new clients (accept)、
 		for (unsigned int i = 0; i < serverSockets.size(); i++)
 		{
-			
 			int sfd = serverSockets[i];
 			if (FD_ISSET(sfd, &readSet))
 			{
 				while(true)//there might be multiple new connections in non-blocking mode at a port
 				{
-					
-					std::cout << " in while true loop"<< std::endl;
 					struct sockaddr_in clientAddr;
 					socklen_t addrLen = sizeof(clientAddr);
 					int clientFd = accept(sfd, (sockaddr*)&clientAddr, &addrLen);
@@ -335,33 +308,21 @@ void Served::runEventloop()
 					}
 					else
 					{
-						std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
-
+						//std::cout << "📡 New connection accepted on port: " << clientFd << std::endl;
 						std::shared_ptr<ClientConnection> conn = std::make_shared<ClientConnection>(clientFd, servers[i].port, this);// init client
-						//ClientConnection conn (clientFd);
-						// conn.appendToWriteBuffer("Hello from server!  here there (Test Message)\n");
-						//把這個新clientFd 以及對應的 ClientConnection 物件，放進 clients 這個container
+						//insert new clientFd and its ClientConnection in the container
 						clients.insert(std::make_pair(clientFd, conn));
-						///test///
-						std::cout << "Current connected clients: ";
-						for (auto it = clients.begin(); it != clients.end(); ++it) {
-							std::cout << it->first << " ";
-						}
 						std::cout << std::endl;
 					}
 				}	
 			}
 		}
 
-		//檢查所有現有 client FD，是否可讀
-		// auto it = clients.begin();
-		// while (it != clients.end())
+		//check all client FD if there is anything to read
 		for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it = clients.begin(); it != clients.end(); it++)
 		{
-			
-			
 			int cfd = it->first;
-			std::shared_ptr<ClientConnection> conn = it->second;//?
+			std::shared_ptr<ClientConnection> conn = it->second;
 			bool closed = false;
 
 			//if can read
@@ -371,7 +332,7 @@ void Served::runEventloop()
 			
 				if (n < 0)
 				{
-					std::cout << "Client: " << cfd << " disconnected. hahaha\n";
+					//std::cout << "Client: " << cfd << " disconnected. hahaha\n";
 					close(cfd);
 					it = clients.erase(it);
 					
@@ -403,7 +364,7 @@ void Served::runEventloop()
 			}
 			
 				
-			//6.若有 client 可寫，就 send()。
+			//6. client sent request -> send()
 			//if (!closed && FD_ISSET(cfd, &writeSet) )
 			if (FD_ISSET(cfd, &writeSet) && conn->needWrite())
 			{
@@ -438,15 +399,15 @@ void Served::runEventloop()
 					conn->response.clear();
 					conn->writeOffset = 0;
 					sent = totalSent;
-					std::cout << "ssssssssssssssent: " << sent << std::endl;
+					//std::cout << "sent: " << sent << std::endl;
 				}
 
 				if (sent < 0 || sent == 0)
 				{
 					if (sent < 0)
 						std::cerr << "❌ Error: failed to send data to client " << cfd << std::endl;
-					else
-						std::cout << "❌ Client " << cfd << " disconnected.hehehe" << std::endl;
+					//else
+						//std::cout << "❌ Client " << cfd << " disconnected" << std::endl;
 					
 					
 					conn->resp.reset();
@@ -458,7 +419,6 @@ void Served::runEventloop()
 				}
 				if (closed) continue;
 			}
-			// ++it;
 		}
 
 	}
@@ -467,10 +427,8 @@ void Served::runEventloop()
 }
 
 
-
 void Served::cleanup(void)
 {
-	std::cout << "call cleanup " << std::endl;
 	//close server sockets
 	for (size_t i = 1; i < serverSockets.size() ; ++i)
 	{
@@ -484,6 +442,13 @@ void Served::cleanup(void)
 	}
 	//clean container
 	clients.clear();
+	_socketFdToServerConf.clear();
+	_portsToSockets.clear();
+
+	_locations.clear();
+
 	serverSockets.clear();
+
+	 _socketToPort.clear();
 }
 	

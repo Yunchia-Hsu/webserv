@@ -11,9 +11,7 @@ void ConfiParser::parseFile(const std::string& filename)
     std::cout << "Starting to PARSE the file" << std::endl;  /// DEBUGPRINT
     
 	std::ifstream file(filename);
-
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         throw std::runtime_error("Failed to open the file: " + filename);
     }
 
@@ -26,125 +24,68 @@ void ConfiParser::parseFile(const std::string& filename)
 			Ignore whitespace
 			Ignore notes etc.
 		*/
-        size_t start = line.find_first_not_of(" \t");
-        if (start != std::string::npos)
-            line = line.substr(start);
-        if (line.empty() || line[0] == '#' || line[0] == ';')
+        line = Utils::trimLine(line);
+		if (line.empty() || line[0] == '#' || line[0] == ';')
             continue;
 
 
-		if  (line.find("server") == 0) //if  (line.find("server {") == 0)
+		if  (line == "server")
 		{
-			/*
-			// OLD  VERSION
-			std::getline(file, line);
-			// std::cout<<"---------------------line:" << line <<std::endl;
-			ServerConf server(line);                                  // Maybe need to change it to shared point. Will check it later
-			parseServerStuff(file, server);
+			if (!std::getline(file, line))
+				break;
+			line = Utils::trimLine(line);
 			
-			//std::pair<std::string, int> hostPort = {server.host, server.port};
-			std::pair<std::string, int> hostPort = std::make_pair(server.host, server.port);
-			// std::cout << "hhhhhhhhhhhhost port: " << hostPort.first << " and " << hostPort.second << std::endl;
-			std::string ip_and_port = hostPort.first + ":" + std::to_string(hostPort.second);
-			// std::cout << "nnnnnnnew ip_and_port: " << ip_and_port << std::endl;
-			std::shared_ptr<SocketWrapper> socket(new SocketWrapper(server));
-			portsToSockets.insert(std::make_pair(ip_and_port, socket));
-			if (usedPorts.find(hostPort) != usedPorts.end()) 
+			
+			if (line != "{")
 			{
-    			std::cerr << "⚠️ WARNING: You're trying to use the same port multiple times! " << std::endl;
+				std::cerr << "❌ Expected '{' after 'server'" << std::endl;
+				continue ;
 			}
-			usedPorts.insert(hostPort);
-
-			servers.push_back(server);
-			*/
-			//NEW VERSION
-			if (line.find("{") == std::string::npos)
-			{
-				std::getline(file, line);
-				start = line.find_first_not_of("\t");
-				if (start != std::string::npos)
-					line = line.substr(start);
-				if (line != "{")
-					throw std::runtime_error("Expected '{' after server");
-			}
-			//ServerConf server(line);                                  // Maybe need to change it to shared point. Will check it later
-			ServerConf server;
-			parseServerStuff(file, server);
-
-			std::pair<std::string, int> hostPort = std::make_pair(server.host, server.port);
-			std::string ip_and_port = hostPort.first + ":" + std::to_string(hostPort.second);
-
-			std::shared_ptr<SocketWrapper> socket(new SocketWrapper(server));
-			portsToSockets.insert(std::make_pair(ip_and_port, socket));
-
-			if (usedPorts.find(hostPort) != usedPorts.end()) 
-			{
-    			std::cerr << "⚠️ WARNING: You're trying to use the same port multiple times! " << std::endl;
-			}
-			usedPorts.insert(hostPort);
-
-			servers.push_back(server);
 		}
+		else if (line != "server {")
+			continue;
+
+		ServerConf server;
+		try {
+			parseServerStuff(file, server);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "❌ Error in the parsing block: " << e.what() << std::endl;
+			continue ; // skips the whole server if it's faulty
+		}
+			
+		if (server.port == 0 || server.root.empty() || server.index.empty())
+		{
+			std::cerr << "❌ Skipping incomplete server config (missing port, root, or index)\n";
+			continue;
+		}
+
+		std::pair<std::string, int> hostPort = std::make_pair(server.host, server.port);
+		std::string ip_and_port = hostPort.first + ":" + std::to_string(hostPort.second);
+
+		std::shared_ptr<SocketWrapper> socket(new SocketWrapper(server));
+		portsToSockets.insert(std::make_pair(ip_and_port, socket));
+
+		if (usedPorts.find(hostPort) != usedPorts.end()) 
+		{
+   			std::cerr << "⚠️ WARNING: You're trying to use the same port multiple times! " << std::endl;
+		}
+		usedPorts.insert(hostPort);
+
+		servers.push_back(server);
+		
 	}
 	file.close();
 	testPrinter(); // FOR DEBUG
 }
 
-//This function will parser the max-client_body_size from str to size_t
-size_t parseBody(const std::string& value)
-{
-	size_t multip = 1;
-	std::string n = value;
-
-	if (value.empty())
-	{
-		std::cerr << "⚠️ Warning! Wrong max_body set, default(1M) used instead" << std::endl;
-		return 1048576; // 1M as bytes
-	}
-
-	//converter
-	char sizeC = value.back();
-
-	if (sizeC == 'K' || sizeC == 'k')
-	{
-        multip = 1024; // Convert KB to bytes
-        n.pop_back();		
-	}
-	else if (sizeC == 'M' || sizeC == 'M')
-	{
-        multip = 1024 * 1024; // Convert MB to bytes
-        n.pop_back();
-	}
-	else if (sizeC == 'G' || sizeC == 'g')
-	{
-        multip = 1024 * 1024 * 1024; // Convert GB to bytes
-        n.pop_back();
-	}
-	else
-	{
-		std::cerr << "⚠️ Warning! I need a unit for my  Body, assuming (M)" << std::endl;
-		multip = 1024 * 1024; // Convert MB to bytes
-	}
-	try
-	{
-		size_t size = std::stoul(n) * multip;
-		if (size > 1048576 )
-		{
-			std::cerr << "⚠️ Warning! Max body is 1M, so it was set as 1M" << std::endl;
-			return 1048576;
-		}
-		return size;
-	}
-	catch (...)
-	{
-		std::cerr << "Error error, inalid BodySize, setting the size as 1M" << std::endl;
-		return 1048576;
-	}
-}
-
 void ConfiParser::serverKeys(const std::string& keyWord, const std::string& value, ServerConf& server)
 {
-	// std::cout << "nnnnnnnnn-------------------------------------------------nnnnname: " << std::endl;
+	if (keyWord == "server"  || keyWord == "location" || keyWord == "{")
+	{
+		std::cerr << "⚠️ Unexpected block directive inside serve. Will ignore it" << std::endl;
+		return ;
+	}
 	if (keyWord  == "listen")
 	{
 		std::string cleanedValue = value;
@@ -207,7 +148,7 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 	else if (keyWord == "client_max_body_size")
 	{
 		server.clientMaxBodySize = value; // this not right!
-		server.clientMaxBodySize = parseBody(value);
+		server.clientMaxBodySize = Utils::parseBody(value);
 	}
 	else if (keyWord == "error_page" || keyWord == "location" || keyWord == "methods" || keyWord == "allow_methods")
 	{
@@ -262,39 +203,11 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			value.pop_back();
 		if (keyWord == "location")
 		{
-			//THIS IS PROBABLY NOT NEEDED!!!!
-			// std::string path = value;
-
-			// if (path.find("{") != std::string::npos)
-			// {
-			// 	path = path.substr(0, path.find("{"));
-			// 	size_t end = path.find_last_not_of("\t");
-			// 	if (end != std::string::npos)
-			// 		path = path.substr(0, end + 1);
-			// }
-			// else
-			// {
-			// 	std::getline(file, line);
-			// 	start = line.find_first_not_of("\t");
-			// 	if (start != std::string::npos)
-			// 		line = line.substr(start);
-			// 	if (line != "{")
-			// 		throw std::runtime_error("Expected '{' after location path");
-			// }
-
-			//test lines:
-		
 			std::shared_ptr<Location> location(new Location(&server));
 			location->parseLocation(file, line);
-
-			//Test print for location { lines inside }
-//			if (!location->_methods.empty())
-//				std::cout << "original location: " << location << " method: " << location->_methods.front() << std::endl;
+		
 			server.locations.push_back(location);
 		}
-
-
-//		serverKeys(keyWord, value, server);
 
 		/* 
 			Complex Key Words
@@ -368,6 +281,19 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 		server.clientMaxBodySize = "1M";
 	}
 
+	/*
+		 Validate before saving
+	*/
+
+	if (server.port == 0)
+		throw std::runtime_error("Invalid or missing port in server block");
+
+	if (server.root.empty())	
+		throw std::runtime_error("Missing root in server block");
+
+	if (server.locations.empty())
+		std::cerr << "⚠️ Warning: Server block has no locations defined\n";
+
 //	server.printConfig(); // DEBUGPRINT
 }
 
@@ -438,11 +364,8 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 			EXEPTION CHECKS:
 				check if line is empty, handle brackets, trim whitespace, remove  semicolons
 		*/
-		size_t start = line.find_first_not_of(" \t");
-		if (start != std::string::npos)
-			line = line.substr(start);
-	
-		if (line.empty() || line[0] == '#')
+		line = Utils::trimLine(line);
+			if (line.empty() || line[0] == '#')
 			continue ;
 
 		if (line == "{")
@@ -477,15 +400,15 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		/*
 			Nested locations! --> It will create loop untill all is set!
 		*/
+
 		if  (keyWord == "location")
 		{
 			RouteConf  nestedRoute;
 			nestedRoute.location = value;
 
 			std::getline(file, line);
-			start  = line.find_first_not_of("\t ");
-			if (start != std::string::npos)
-				line  = line.substr(start);
+
+			line = Utils::trimLine(line);
 			if (line != "{")
 			{
 				std::cerr << "You need '{' after location" << std::endl;

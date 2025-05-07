@@ -93,8 +93,11 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 				_addUpload(line);
 			else if (keyword == "cgi_pass")
 				_addCgi(line);
+			//we were missing this!
+			else if (keyword == "client_max_body_size")
+				_addClientBodySize(line);
 			else
-				std::cerr << "Unown element error in location block!" << std::endl;
+				std::cerr << "Unown element error in location block! Line: '" << line << "' Keyword: '" << keyword << "'\n";
 		}
 		catch (const std::exception& e)
 		{
@@ -237,7 +240,10 @@ void Location::_addRedirect(std::string &line)
 
 void Location::_addUpload(std::string &line)
 {
-	std::regex ptrn("\t{2}upload\\s+(.*)\\s*;\\s*");
+//	std::regex ptrn("\t{2}upload\\s+(.*)\\s*;\\s*");
+	// we don't want ';' at the end of the lines
+	std::regex ptrn("^\\s*upload\\s+(\\S+);?\\s*$");
+
 	std::smatch match_res;
 	struct stat mode;
 
@@ -280,6 +286,17 @@ void Location::_addCgi(std::string &line)
 	// You can set this to a default extension like .bla
 	_cgi[".bla"] = path;
 }
+
+void Location::_addClientBodySize(const std::string& line)
+{
+	std::istringstream iss(line);
+	std::string key, value;
+	if (!(iss >> key >> value))
+		throw std::runtime_error("_addClientBodySize: Expected format: 'client_max_body_size <value>'");
+
+	clientMaxBodySize = Utils::parseBody(value); // use same logic as server-wide parser
+}
+
 
 // Getters
 bool Location::getAutoIndex()
