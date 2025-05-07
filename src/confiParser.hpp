@@ -41,6 +41,7 @@ class ConfiParser
         void parseRouteStuff(std::ifstream& file, RouteConf& route);
         void routeKeys(const std::string& keyWord, const std::string& value, RouteConf& route);
         void serverKeys(const std::string& keyWord, const std::string& value, ServerConf& route);
+        void parseListener(const std::string& rawValue, std::string& hostOut, int& portOut);
         
         //getter for servers!
         std::vector<ServerConf>& getServers() { return servers; }

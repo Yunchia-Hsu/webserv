@@ -88,31 +88,37 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 	}
 	if (keyWord  == "listen")
 	{
-		std::string cleanedValue = value;
-		cleanedValue.erase(std::remove_if(cleanedValue.begin(), cleanedValue.end(), ::isspace), cleanedValue.end());
-
-		size_t doubleDot = value.find(":");
-		if (doubleDot != std::string::npos)
-		{
-			server.host = cleanedValue.substr(0, doubleDot);
-
-			std::string portStr = cleanedValue.substr(doubleDot + 1);
-			int port = std::stoi(portStr);
-			if (port < 1 || port > 65535)
-				throw std::runtime_error("Invalid port is not a good port!");
-
-			server.port = port;
+		try 		{
+			parseListener(value, server.host, server.port);
 		}
-		else
-		{
-			server.host = "0.0.0.0"; // set to default
-			int port = std::stoi(cleanedValue);
-			if (port < 1 || port > 65535)
-				throw std::runtime_error("Invalid port is not a good port!");
-			server.port = port;
+		catch (const std::exception& e) {
+			throw std::runtime_error(std::string("Check what you're tryig to listen: ") + e.what());
 		}
+		// std::string cleanedValue = value;
+		// cleanedValue.erase(std::remove_if(cleanedValue.begin(), cleanedValue.end(), ::isspace), cleanedValue.end());
+
+		// size_t doubleDot = value.find(":");
+		// if (doubleDot != std::string::npos)
+		// {
+		// 	server.host = cleanedValue.substr(0, doubleDot);
+
+		// 	std::string portStr = cleanedValue.substr(doubleDot + 1);
+		// 	int port = std::stoi(portStr);
+		// 	if (port < 1 || port > 65535)
+		// 		throw std::runtime_error("Invalid port is not a good port!");
+
+		// 	server.port = port;
+		// }
+		// else
+		// {
+		// 	server.host = "0.0.0.0"; // set to default
+		// 	int port = std::stoi(cleanedValue);
+		// 	if (port < 1 || port > 65535)
+		// 		throw std::runtime_error("Invalid port is not a good port!");
+		// 	server.port = port;
+		// }
 		
-		std::cout << "✅ Parsed port: " << server.port << std::endl; // DEBUG
+		// std::cout << "✅ Parsed port: " << server.port << std::endl; // DEBUG
 
 	}
 	else if (keyWord == "server_name")
@@ -439,4 +445,69 @@ void ConfiParser::testPrinter() const
 
 std::vector<std::shared_ptr<Location>>	&ConfiParser::getLocations() {
 	return _locations;
+}
+
+void ConfiParser::parseListener(const std::string& rawValue, std::string& hostOut, int& portOut)
+{
+	std::string cleanedValue = rawValue;
+	cleanedValue.erase(
+		std::remove_if(cleanedValue.begin(), cleanedValue.end(), ::isspace), cleanedValue.end());
+
+	size_t colon = cleanedValue.find(":");
+	std::string ip = "0.0.0.0";
+	std::string portStr;
+
+	if (colon != std::string::npos)
+	{
+		ip = cleanedValue.substr(0, colon);
+		portStr = cleanedValue.substr(colon + 1);
+	}
+	else {
+		portStr = cleanedValue;
+	}
+
+	int dotCount = 0;
+	for (char c : ip)
+	{
+		if (!isdigit(c) && c != '.')
+			throw std::runtime_error("❌ invalid characters in the ip!");
+		if (c == '.')
+			dotCount++;
+	}
+	if (dotCount != 3)
+		throw std::runtime_error("❌ Invalid numbers of '.' in the ip!");
+
+	std::stringstream ss(ip);
+	std::string token;
+	while (std::getline(ss, token, '.'))
+	{
+		if (token.empty())
+			throw std::runtime_error("❌ Empty octet in ip!");
+	}
+
+	for (char c : token)
+	{
+		if (!isdigit(c))
+			throw std::runtime_error("❌ Non digit found on ip!");
+	}
+	int octet = std::stoi(token);
+	if (octet < 0 || octet > 255)
+		throw std::runtime_error("❌  Out of range ip!");
+
+	if (portStr.empty())
+		throw std::runtime_error("❌ Port missing!");
+
+	for (char c : portStr)
+	{
+		if (!isdigit(c))
+			throw std::runtime_error("❌ Invalid characters on port!");
+	}
+
+	int port = std::stoi(portStr);
+	if (port < 1 || port > 65535)
+		throw std::runtime_error("❌ Invalid port number!");
+
+	hostOut = ip;
+	portOut = port;
+
 }
