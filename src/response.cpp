@@ -26,7 +26,9 @@ Response::Response(std::shared_ptr<ClientConnection> client)
 
 	fix_uri();
 
-	if (Cgi::is_cgi(_location, _request->_uri))
+	auto req = _request.lock();
+	if (!req) return ;
+	if (Cgi::is_cgi(_location, req->_uri))
 	{
 		std::cout << "llllllllet me seesee\n";
 		if (!init_cgi(client))
@@ -42,11 +44,11 @@ Response::Response(std::shared_ptr<ClientConnection> client)
 
 	// if (_location->_session) _handleCookies();
 
-	if (_request->_method == METHOD_GET)
+	if (req->_method == METHOD_GET)
 		_status_code = handle_get();
-	if (_request->_method == METHOD_POST)
+	if (req->_method == METHOD_POST)
 		_status_code = handle_post();
-	if (_request->_method == METHOD_DELETE)
+	if (req->_method == METHOD_DELETE)
 		_status_code = handle_delete();
 	std::cout << "status-----------------------"<<_status_code <<std::endl;
 	finish_response();
@@ -54,15 +56,17 @@ Response::Response(std::shared_ptr<ClientConnection> client)
 
 void Response::fix_uri(void)
 {
-	if (_request->_uri.rfind(_location->_path, 0) == 0)
+	auto req = _request.lock();
+		if (!req) return;
+	if (req->_uri.rfind(_location->_path, 0) == 0)
 	{
-		_request->_uri.erase(0, _location->_path.size());
-		if (_request->_uri.front() != '/')
-			_request->_uri = "/" + _request->_uri;
+		req->_uri.erase(0, _location->_path.size());
+		if (req->_uri.front() != '/')
+			req->_uri = "/" + req->_uri;
 	}
-	if (_request->_uri.back() != '/')
+	if (req->_uri.back() != '/')
 		return;
-	std::string target = _location->_rootPath + _request->_uri;
+	std::string target = _location->_rootPath + req->_uri;
 	int fs = Io::file_stat(target);
 
 	if (!(fs & FS_ISDIR))
@@ -70,11 +74,11 @@ void Response::fix_uri(void)
 
 	if (!_location->_index.empty())
 	{
-		target = _location->_rootPath + _request->_uri + _location->_index;
+		target = _location->_rootPath + req->_uri + _location->_index;
 		int flags = Io::file_stat(target);
 
 		if (flags & FS_ISFILE)
-			_request->_uri += _location->_index;
+			req->_uri += _location->_index;
 	}
 }
 
@@ -85,9 +89,11 @@ void Response::finish_response(void)
 
 int Response::has_errors(void)
 {
-	std::cout<< "----------------url---------------------" << _request->_method_str<<std::endl;
-	if (_request->parse_error)
-		return _request->parse_error;
+	auto req = _request.lock();
+		if (!req) return STATUS_INTERNAL_ERROR;
+	std::cout<< "----------------url---------------------" << req->_method_str<<std::endl;
+	if (req->parse_error)
+		return req->parse_error;
 
 	_location = find_location();
 	if (_location == nullptr)
@@ -96,13 +102,13 @@ int Response::has_errors(void)
 		return STATUS_NOT_FOUND;
 	}
 
-	if (!ClientConnection::is_method_allowed(_location->_methods, _request->_method_str))
+	if (!ClientConnection::is_method_allowed(_location->_methods, req->_method_str))
 		return STATUS_METHOD_NOT_ALLOWED;
 
 	if (!_location->_redirectPath.empty())
 		return 0;
 	try {
-		std::string filename = _location->_rootPath + _request->_uri;
+		std::string filename = _location->_rootPath + req->_uri;
 		std::filesystem::path resolved = std::filesystem::canonical(filename);
 
 		std::string uri_normalized = resolved.generic_string();
@@ -120,10 +126,12 @@ int Response::has_errors(void)
 
 void Response::create_response(int status)
 {
+	auto req = _request.lock();
+		if (!req) return;
 	set_error_page(status);
 
 	const std::string &bs = _body.str();
-	// Logger::log_request(std::weak_ptr<Request>(_request), bs.size(), status);
+	// Logger::logreq(std::weak_ptr<Request>(req), bs.size(), status);
 
 	buffer << "HTTP/1.1 " << status << " " << code_map[status] << CRLF;
 	buffer << "Content-Length: " << bs.size() << CRLF;
@@ -140,7 +148,7 @@ void Response::create_response(int status)
 	}
 
 	if (!_additional_headers.count("Content-Type") && bs.size() > 0)
-		buffer << "Content-Type: " << get_content_type(_request->_uri) << CRLF;
+		buffer << "Content-Type: " << get_content_type(req->_uri) << CRLF;
 	if (!_setCookie.empty())
 		buffer << "Set-Cookie: " << _setCookie << CRLF;
 	buffer << CRLF;
@@ -149,8 +157,10 @@ void Response::create_response(int status)
 
 int Response::handle_get(void)
 {
+	auto req = _request.lock();
+		if (!req) return STATUS_INTERNAL_ERROR;
 	//Check the folders and root
-	std::string path_inside_location = _request->_uri;
+	std::string path_inside_location = req->_uri;
 	if (path_inside_location.find(_location->_path) == 0)
 		path_inside_location = path_inside_location.substr(_location->_path.size());
 	if (path_inside_location.empty() || path_inside_location[0] != '/')
@@ -178,7 +188,7 @@ int Response::handle_get(void)
 	}
 	if (flags & FS_ISDIR)
 	{
-		if (_request->_uri.back() != '/')
+		if (req->_uri.back() != '/')
 			return STATUS_NOT_FOUND;
 		if (!_location->_autoIndex)
 		{
@@ -194,22 +204,24 @@ int Response::handle_get(void)
 
 int Response::handle_post(void)
 {
-	std::string filename = _location->_rootPath + _request->_uri;
+	auto req = _request.lock();
+		if (!req) return STATUS_INTERNAL_ERROR;
+	std::string filename = _location->_rootPath + req->_uri;
 	// std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhellllllooooooooooooo: " << filename << std::endl;
 	bool wrote = false;
 
-	if (_request->_body_type == BODY_TYPE_CHUNKED &&
+	if (req->_body_type == BODY_TYPE_CHUNKED &&
 			!_location->_uploadPath.empty()
 			&& filename.rfind(_location->_uploadPath, 0) == 0)
 	{
-		if (!Io::write_file(filename, _request->_body))
+		if (!Io::write_file(filename, req->_body))
 			return STATUS_INTERNAL_ERROR;
 		return STATUS_CREATED;
 	}
 	int flags = Io::file_stat(filename);
 
-	// std::cout << "______________request->parts: " << _request->parts.size() << std::endl;
-	for (auto &part : _request->parts)
+	// std::cout << "_____________req->parts: " << req->parts.size() << std::endl;
+	for (auto &part : req->parts)
 	{
 		if (_location->_uploadPath.empty())
 			return STATUS_FORBIDDEN;
@@ -230,7 +242,9 @@ int Response::handle_post(void)
 
 int Response::handle_delete(void)
 {
-	std::string filename = _location->_rootPath + _request->_uri;
+	auto req = _request.lock();
+		if (!req) return STATUS_INTERNAL_ERROR;
+	std::string filename = _location->_rootPath + req->_uri;
 	int flags = Io::file_stat(filename);
 	if (!flags)
 		return STATUS_NOT_FOUND;
@@ -261,12 +275,14 @@ void Response::finish_cgi(std::shared_ptr<ClientConnection> req)
 
 bool Response::init_cgi(std::shared_ptr<ClientConnection> client)
 {
-	if (_request->_method == METHOD_DELETE)
+	auto req = _request.lock();
+		if (!req) return false;
+	if (req->_method == METHOD_DELETE)
 	{
 		_status_code = STATUS_METHOD_NOT_ALLOWED;
 		return false;
 	}
-	Cgi cgi(_location, _request);
+	Cgi cgi(_location, req);
 
 	if (!cgi.start(client))
 	{
@@ -288,6 +304,8 @@ void Response::set_error(int code)
 
 void Response::set_error_page(int code)
 {
+	auto req = _request.lock();
+		if (!req) return ;
 	if (_body.str().size() > 0)
 		return;
 	if (!(code >= 400 && code <= 599))
@@ -298,13 +316,13 @@ void Response::set_error_page(int code)
 	*/
 	_additional_headers["Content-Type"] = "text/html";
 
-	if (!_request->conf || _request->conf->errorPages.count(code) == 0)           //will check it later/////////////
+	if (!req->conf || req->conf->errorPages.count(code) == 0)           //will check it later/////////////
 	{
 		generate_error_page(code);
 		return;
 	}
 
-	std::string page_path = _request->conf->errorPages[code];
+	std::string page_path = req->conf->errorPages[code];
 	if (!Io::read_file(page_path, _body))
 	{
 		generate_error_page(code);
@@ -335,22 +353,24 @@ void Response::generate_error_page(int code)
 
 std::shared_ptr<Location> Response::find_location(void)
 {
-	std::shared_ptr<Location> ret = _request->conf->getLocations().front();
+	auto req = _request.lock();
+		if (!req) return nullptr;
+	std::shared_ptr<Location> ret = req->conf->getLocations().front();
 	Location defaultpath;
 	
 	
-	if (_request->conf == nullptr)
+	if (req->conf == nullptr)
 		return nullptr;
-	for (const auto &loc : _request->conf->getLocations())
+	for (const auto &loc : req->conf->getLocations())
 	{
-//		std::cout << "lllllllllllllllllllllllllllocation: " << loc->_path << " request uri: " << _request->_uri << std::endl;
-		if (_request->_uri == loc->_path)
+//		std::cout << "lllllllllllllllllllllllllllocation: " << loc->_path << " request uri: " << req->_uri << std::endl;
+		if (req->_uri == loc->_path)
 		{
 			
 			ret = loc;
 			break;
 		}
-		if (_request->_uri.rfind(loc->_path, 0) == 0)
+		if (req->_uri.rfind(loc->_path, 0) == 0)
 		{
 			if (!ret || loc->_path.size() > ret->_path.size())
 			{
@@ -360,12 +380,14 @@ std::shared_ptr<Location> Response::find_location(void)
 	
 	}
 	
-	// std::cout << "2lllllllllllllllllllllllllllocation: " << ret->_path << " request uri: " << _request->_uri << std::endl;
+	// std::cout << "2lllllllllllllllllllllllllllocation: " << ret->_path << " request uri: " << req->_uri << std::endl;
 	return ret;
 }
 
 bool Response::directory_index(std::string path)
 {
+	auto req = _request.lock();
+		if (!req) return false;
 	DIR *dir;
 	struct dirent *entry;
 
@@ -373,7 +395,7 @@ bool Response::directory_index(std::string path)
 	if (!dir)
 		return false;
 	_body << "<html><head><title>Index</title></head><body><h2>Index of "
-	      << _request->_uri << "</h2>";
+	      << req->_uri << "</h2>";
 
 	std::string href;
 	href.reserve(256);
