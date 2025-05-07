@@ -229,36 +229,6 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			server.errorPages[errorCode] = errorFile;
 
 		}
-		/*
-		else if (keyWord == "location")
-		{
-			RouteConf route;
-			route.location = value;
-			
-		
-			std::shared_ptr<Location> location(new Location(&server));
-			location->parseLocation(file, line);
-			// std::getline(file, line);
-			// start = line.find_first_not_of("\t ");
-			// if (start != std::string::npos)
-			// 	line = line.substr(start);
-			// if (line!= "{")
-			// {
-			// 	std::cerr << "ERROR: Missing '{' after location" << std::endl;
-			// 	continue ;
-			// }
-			// parseRouteStuff(file, route);
-			// server.routes.push_back(route.location);
-			// std::shared_ptr<Location> location(new Location(&server));
-			// location->parseLocation(file, line);
-			// location->_path = route.location;
-			// loc->_serverRootPath = server.root;
-			
-			//NO THIS
-			//_locations.push_back(location);
-			server.locations.push_back(location);
-		}
-		*/
 
 		else if (keyWord == "methods" || keyWord == "allow_methods")
 		{
