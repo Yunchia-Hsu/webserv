@@ -166,17 +166,14 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 	std::string line;
 	int depth = 1; // to track the {}
 
-	int i = 0;
 	while (std::getline(file, line))
 	{
 		/*
 			EXEPTION CHECKS:
 				check if line is empty, handle brackets, trim whitespace, remove  semicolons
 		*/
-		i++;
-		size_t start = line.find_first_not_of(" \t");
-		if (start != std::string::npos)
-			line = line.substr(start);
+
+		line = Utils::trimLine(line);
 		if (line.empty() || line[0] == '#')
 			continue ;
 		if (line.find("{") != std::string::npos)
@@ -364,6 +361,7 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 			EXEPTION CHECKS:
 				check if line is empty, handle brackets, trim whitespace, remove  semicolons
 		*/
+		
 		line = Utils::trimLine(line);
 			if (line.empty() || line[0] == '#')
 			continue ;
@@ -385,6 +383,7 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 		size_t spaces = line.find(" ");
 		if (spaces == std::string::npos)
 		{
+			std::cout << "HERE HERE HERE" << std::endl;
 			std::cerr<< "ERROR:: Invalid route configurations! '" << line << "'" << std::endl;
 			continue ;
 		}
