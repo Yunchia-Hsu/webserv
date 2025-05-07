@@ -10,7 +10,7 @@ class ClientConnection;
 class Response {
     private:
 	std::weak_ptr<ClientConnection> _client;
-	std::shared_ptr<ClientConnection> _request;
+	std::weak_ptr<ClientConnection> _request;
 	std::shared_ptr<Location> _location;
 	std::vector<std::shared_ptr<Location>> _locations;
 

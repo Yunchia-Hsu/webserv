@@ -35,6 +35,11 @@ class Served
 		std::shared_ptr<Response> resp;
 		std::string response;
 
+		std::unordered_map<int, int> _cgi_to_client;
+
+		bool init_cgi_fds(std::shared_ptr<ClientConnection> conn);
+		bool mod_fd(int fd, int ctl, int mask, std::shared_ptr<ClientConnection> cl);
+
 	public:
 		Served(const std::vector<ServerConf>& parsedServers, const std::map<std::string, std::shared_ptr<SocketWrapper>> portToSockets);
 		~Served();

@@ -54,6 +54,15 @@ ClientConnection::ClientConnection(int cgi_fd, Served *serve): fd(cgi_fd), write
 	this->_total_read = 0;
 	this->host_matched = false;
 	this->conn_type = CONN_CGI;
+	this->pid = -1;
+	this->cgi_fd_read = -1;
+	this->cgi_fd_write = -1;
+	this->cgi_write_offset = 0;
+}
+
+bool ClientConnection::has_pending_write_to_cgi() const {
+	std::cout << "Soooo cgi_fd_write is: " << cgi_fd_write << " cgi_write_offset is: " << cgi_write_offset << " body size: " << _body.size() << std::endl;
+	return cgi_fd_write >= 0 && cgi_write_offset < _body.size();
 }
 
 bool ClientConnection::needWrite ()
@@ -431,6 +440,7 @@ bool ClientConnection::parse_header_field(size_t pos)
 
 State ClientConnection::parse_body(void)
 {
+	std::cout << "DDDDDDDDDDDDDDDDDDDDo we come there?\n";
 	if (_headers.count("host") == 0)
 		return State::ERROR;
 	if (_body_type == BODY_TYPE_CHUNKED)
@@ -446,6 +456,7 @@ State ClientConnection::parse_body(void)
 		return State::MULTIPART;
 	_body = _buffer.substr(0, _content_len);
 	_buffer.clear();
+	std::cout << "So the body is: " << _body << std::endl;
 	return State::OK;
 }
 

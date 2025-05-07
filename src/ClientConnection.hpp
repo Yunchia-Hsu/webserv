@@ -126,6 +126,12 @@ public:
     std::string _buffer;
 
     bool _cgi;
+
+    int cgi_fd_read;
+    int cgi_fd_write;
+    std::string cgi_buffer;  // output from CGI
+    size_t cgi_write_offset;
+    int pid;
     
     std::string getwritebubffer()
     {
@@ -186,5 +192,6 @@ public:
     State parse(State s_state,  std::string data, size_t size);
     void check_body_limit(void);
     static bool is_method_allowed(std::vector<std::string> allowed, std::string method);
+    bool has_pending_write_to_cgi() const;
 };
 #endif
