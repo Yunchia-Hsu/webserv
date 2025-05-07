@@ -1,7 +1,7 @@
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=gnu++17 #-std=c++17 
-LDFLAGS = -lstdc++fs #-fsanitize=address  # optional for older GCCs
-NAME = webserv
+CXXFLAGS = -Wall -Wextra -Werror -std=c++17 # -fsanitize=address -g 
+LDFLAGS = -lstdc++fs -fsanitize=address  # optional for older GCCs
+NAME = webserved
 
 SRC_DIR = src
 OBJ_DIR = obj

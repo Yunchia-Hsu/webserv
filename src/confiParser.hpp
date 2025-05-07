@@ -14,6 +14,7 @@
 #include "RouteConf.hpp"
 #include "location.hpp"
 #include "socketWrapper.hpp"
+#include "utils.hpp"
 
 class Location;
 
