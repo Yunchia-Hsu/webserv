@@ -242,7 +242,8 @@ void Location::_addUpload(std::string &line)
 {
 //	std::regex ptrn("\t{2}upload\\s+(.*)\\s*;\\s*");
 	// we don't want ';' at the end of the lines
-	std::regex ptrn("^\\s*upload\\s+(\\S+);?\\s*$");
+	std::regex ptrn("^\\s*upload\\s+([^\\s;]+)\\s*;?\\s*$");
+
 
 	std::smatch match_res;
 	struct stat mode;
