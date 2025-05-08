@@ -222,38 +222,14 @@ void Served::runEventloop()
 		{
 			int clientfd = it->first;
 			std::shared_ptr<ClientConnection> &conn = it->second;
-			if (conn->needRead()== true)
+			if (conn->needRead()== true && clientfd >= 0)
 				FD_SET(clientfd, &readSet);
 				
 			if (conn->needWrite() == true)
 				FD_SET(clientfd, &writeSet);
-			
-			if (conn->conn_type == CONN_WAIT_CGI) {
-				std::cout << "in client part, sswwlllllllet me seesee: " << conn->cgi_fd_read << " " << conn->cgi_fd_write << std::endl;
-				if (conn->cgi_fd_read >= 0)
-					FD_SET(conn->cgi_fd_read, &readSet);
-				if (conn->cgi_fd_write >= 0 && conn->has_pending_write_to_cgi())
-				{
-					std::cout << "sswwlllllllet me seesee\n";
-					FD_SET(conn->cgi_fd_write, &writeSet);
-				}
-		
-				if (conn->cgi_fd_read > maxfd)
-					maxfd = conn->cgi_fd_read;
-				if (conn->cgi_fd_write > maxfd)
-					maxfd = conn->cgi_fd_write;
-			}
-
 			if (clientfd > maxfd)
 					maxfd = clientfd;
-		}
-		
-	
-		for (auto it = clients.begin(); it != clients.end(); ++it) {
-			std::cout << "so here is something for CGI: " << it->first << " ";
-			int cfd = it->first;
-			std::shared_ptr<ClientConnection> conn = it->second;
-			if (FD_ISSET(cfd, &readSet) && conn->conn_type == CONN_WAIT_CGI){
+			if (FD_ISSET(clientfd, &readSet) && conn->conn_type == CONN_WAIT_CGI){
 				// CGI is ready to be read
 				if (conn->cgi_fd_read >= 0 && FD_ISSET(conn->cgi_fd_read, &readSet)) {
 					char buffer[4096];
@@ -270,7 +246,7 @@ void Served::runEventloop()
 					}
 				}
 			}
-			if (FD_ISSET(cfd, &writeSet) && conn->needWrite() && conn->conn_type == CONN_WAIT_CGI) {
+			if (FD_ISSET(clientfd, &writeSet) && conn->needWrite() && conn->conn_type == CONN_WAIT_CGI) {
 				std::cout << "in write part, sswwlllllllet me seesee: " << conn->cgi_fd_read << " " << conn->cgi_fd_write << std::endl;
 				if (conn->cgi_fd_read >= 0)
 					FD_SET(conn->cgi_fd_read, &readSet);
@@ -280,7 +256,10 @@ void Served::runEventloop()
 					FD_SET(conn->cgi_fd_write, &writeSet);
 				}
 		
-				maxfd = std::max({maxfd, conn->cgi_fd_read, conn->cgi_fd_write});
+				if (conn->cgi_fd_read >= 0) maxfd = std::max(maxfd, conn->cgi_fd_read);
+				if (conn->cgi_fd_write >= 0) maxfd = std::max(maxfd, conn->cgi_fd_write);
+
+				// maxfd = std::max({maxfd, conn->cgi_fd_read, conn->cgi_fd_write});
 				// if (conn->cgi_fd_read > maxfd)
 				// 	maxfd = conn->cgi_fd_read;
 				if (conn->cgi_fd_write > maxfd)
@@ -307,11 +286,7 @@ void Served::runEventloop()
 				}
 			}
 		}
-	
-
-
-
-
+		
 		//4.呼叫 select()，等待有任何 fd 就緒。
 		// for (size_t i = 0; i < serverSockets.size(); ++i) {
 		// 		std::cout << "🔍 server socket fd: " << serverSockets[i] << std::endl;
@@ -321,7 +296,8 @@ void Served::runEventloop()
 		// std::cout << "readycount: " << readycount << std::endl;
 		if (readycount < 0)
 		{
-			std::cerr<< "Error: select()" << std::endl;
+			// std::cerr<< "Error: select()" << std::endl;
+			std::perror("select");
 			//close fd
 			for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
@@ -442,6 +418,12 @@ void Served::runEventloop()
 				int sent = 0;
 				if (!conn->resp) {
 					conn->resp = std::make_shared<Response>(conn);
+					if (conn->conn_type == CONN_WAIT_CGI) {
+						if (init_cgi_fds(conn, readSet, writeSet, maxfd)) {
+							// std::cout << "fffffinally, come here\n";
+							return ;
+						}
+					}
 					conn->response = conn->resp->buffer.str();
 					std::cout << "response result: " << conn->response << std::endl;
 					conn->writeOffset = 0;
@@ -489,12 +471,147 @@ void Served::runEventloop()
 				}
 				if (closed) continue;
 			}
+			// if (conn->conn_type == CONN_CGI)
+			// 	handle_cgi_read(conn, readSet, writeSet, maxfd);
 		}
 
 	}
 	std::cout << "Eventloop end" << std::endl;
 	
 }
+
+bool Served::add_fd(int fd, bool want_read, bool want_write, std::shared_ptr<ClientConnection> cl, fd_set readSet, fd_set writeSet, int maxfd)
+{
+	if (fd < 0) return false;
+
+	if (want_read)
+		FD_SET(fd, &readSet);
+	if (want_write)
+		FD_SET(fd, &writeSet);
+
+	if (cl)
+		clients[fd] = cl;
+
+	if (fd > maxfd)
+		maxfd = fd;
+
+	return true;
+}
+
+void Served::remove_fd(int fd, fd_set readSet, fd_set writeSet, int maxfd)
+{
+	if (fd < 0 || clients.count(fd) == 0)
+		return;
+
+	FD_CLR(fd, &readSet);
+	FD_CLR(fd, &writeSet);
+	clients.erase(fd);
+	_cgi_to_client.erase(fd);
+
+	if (fd == maxfd)
+	{
+		// Recompute max_fd
+		maxfd = 0;
+		for (const auto& entry : clients)
+		{
+			if (entry.first > maxfd)
+				maxfd = entry.first;
+		}
+	}
+}
+
+bool Served::init_cgi_fds(std::shared_ptr<ClientConnection> conn, fd_set readSet, fd_set writeSet, int maxfd)
+{
+	_cgi_to_client[conn->cgi_fd_write] = conn->fd;
+	_cgi_to_client[conn->cgi_fd_read] = conn->fd;
+
+	std::shared_ptr<ClientConnection> read_cgi = std::make_shared<ClientConnection>(conn->cgi_fd_read, this);
+	std::shared_ptr<ClientConnection> write_cgi = std::make_shared<ClientConnection>(conn->cgi_fd_write, this);
+	write_cgi->response = conn->_body;
+
+	int count = 0;
+	if (add_fd(conn->cgi_fd_write, false, true, write_cgi, readSet, writeSet, maxfd))
+		count++;
+	if (add_fd(conn->cgi_fd_read, true, false, read_cgi, readSet, writeSet, maxfd))
+		count++;
+
+	if (count != 2)
+	{
+		// std::cout << "ai, so it still comes here: " << count << std::endl;
+		remove_fd(conn->cgi_fd_write, readSet, writeSet, maxfd);
+		remove_fd(conn->cgi_fd_read, readSet, writeSet, maxfd);
+		conn->resp->set_error(500);
+		return false;
+	}
+
+	std::cerr << "[webserv] CGI initialized: " << conn->cgi_fd_read << "/" << conn->cgi_fd_write << std::endl;
+	return true;
+}
+
+void Served::finish_cgi_client(std::shared_ptr<ClientConnection> cgi_client,
+	fd_set& readSet, fd_set& writeSet, int& maxfd)
+{
+	if (_cgi_to_client.count(cgi_client->fd) == 0)
+		return;
+	int conn_fd = _cgi_to_client[cgi_client->fd];
+	if (clients.count(conn_fd) == 0)
+		return;
+	std::shared_ptr<ClientConnection> conn = clients[conn_fd];
+
+	if (!conn || conn->fd == cgi_client->fd)
+		return;
+
+	remove_fd(conn->cgi_fd_write, readSet, writeSet, maxfd);
+	remove_fd(conn->cgi_fd_read, readSet, writeSet, maxfd);
+
+	if (!Cgi::finish(conn->pid))
+	{
+		std::cerr << "[webserv] CGI error\n";
+		conn->resp->set_error(500);
+	}
+	conn->pid = -1;
+	if (conn->resp)
+		conn->resp->finish_cgi(cgi_client);
+	conn->response = conn->resp->buffer.str();
+
+	// Now we want to write back to client socket
+	FD_SET(conn->fd, &writeSet);
+	if (conn->fd > maxfd)
+		maxfd = conn->fd;
+}
+
+bool Served::handle_cgi_read(std::shared_ptr<ClientConnection> client,
+	fd_set& readSet, fd_set& writeSet, int& maxfd)
+{
+	char buffer[READ_BUFFER_SIZE];
+	std::cout << "so where died, is here?\n";
+	ssize_t bytes_read = read(client->fd, buffer, READ_BUFFER_SIZE);
+
+	std::cout << "so where died, is there?: " << bytes_read << std::endl;
+	if (bytes_read == -1)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			FD_SET(client->fd, &readSet);
+			return false;
+		}
+		remove_fd(client->fd, readSet, writeSet, maxfd);
+		return true;
+	}
+	std::cout << "so where died, is where?\n";
+	State s = client->parse(State::CGIHEADER, buffer, bytes_read);
+
+	if (s == State::OK || s == State::ERROR || bytes_read == 0)
+	{
+		finish_cgi_client(client, readSet, writeSet, maxfd);
+		return true;
+	}
+	// Still expecting more data from CGI — ensure fd is in readSet
+	FD_SET(client->fd, &readSet);
+	if (client->fd > maxfd)
+		maxfd = client->fd;
+	return false;
+}
+
 
 
 void Served::cleanup(void)

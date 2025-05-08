@@ -57,7 +57,7 @@ Response::Response(std::shared_ptr<ClientConnection> client)
 void Response::fix_uri(void)
 {
 	auto req = _request.lock();
-		if (!req) return;
+	if (!req) return;
 	if (req->_uri.rfind(_location->_path, 0) == 0)
 	{
 		req->_uri.erase(0, _location->_path.size());
@@ -90,15 +90,17 @@ void Response::finish_response(void)
 int Response::has_errors(void)
 {
 	auto req = _request.lock();
-		if (!req) return STATUS_INTERNAL_ERROR;
-	std::cout<< "----------------url---------------------" << req->_method_str<<std::endl;
+	if (!req) return STATUS_INTERNAL_ERROR;
+	// std::cout<< "----------------url---------------------" << req->_method_str<<std::endl;
 	if (req->parse_error)
 		return req->parse_error;
 
+	// std::cout << "fhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: "  << std::endl;
 	_location = find_location();
+	// std::cout << "shhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: "  << std::endl;
 	if (_location == nullptr)
 	{
-		std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: "  << std::endl;
+		// std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh: "  << std::endl;
 		return STATUS_NOT_FOUND;
 	}
 
@@ -127,7 +129,7 @@ int Response::has_errors(void)
 void Response::create_response(int status)
 {
 	auto req = _request.lock();
-		if (!req) return;
+	if (!req) return;
 	set_error_page(status);
 
 	const std::string &bs = _body.str();
@@ -158,7 +160,7 @@ void Response::create_response(int status)
 int Response::handle_get(void)
 {
 	auto req = _request.lock();
-		if (!req) return STATUS_INTERNAL_ERROR;
+	if (!req) return STATUS_INTERNAL_ERROR;
 	//Check the folders and root
 	std::string path_inside_location = req->_uri;
 	if (path_inside_location.find(_location->_path) == 0)
@@ -186,6 +188,7 @@ int Response::handle_get(void)
 			return STATUS_INTERNAL_ERROR;
 		return STATUS_OK;
 	}
+	std::cout << "ccccccccccccccccccccccccccccome here?\n";
 	if (flags & FS_ISDIR)
 	{
 		if (req->_uri.back() != '/')
@@ -205,7 +208,7 @@ int Response::handle_get(void)
 int Response::handle_post(void)
 {
 	auto req = _request.lock();
-		if (!req) return STATUS_INTERNAL_ERROR;
+	if (!req) return STATUS_INTERNAL_ERROR;
 	std::string filename = _location->_rootPath + req->_uri;
 	// std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhellllllooooooooooooo: " << filename << std::endl;
 	bool wrote = false;
@@ -219,6 +222,11 @@ int Response::handle_post(void)
 		return STATUS_CREATED;
 	}
 	int flags = Io::file_stat(filename);
+
+	if (req->parts.empty()) {
+		std::cerr << "❌ ERROR: No parts found in multipart POST!\n";
+		return STATUS_BAD_REQUEST; // Or STATUS_INTERNAL_ERROR
+	}
 
 	// std::cout << "_____________req->parts: " << req->parts.size() << std::endl;
 	for (auto &part : req->parts)
@@ -243,7 +251,7 @@ int Response::handle_post(void)
 int Response::handle_delete(void)
 {
 	auto req = _request.lock();
-		if (!req) return STATUS_INTERNAL_ERROR;
+	if (!req) return STATUS_INTERNAL_ERROR;
 	std::string filename = _location->_rootPath + req->_uri;
 	int flags = Io::file_stat(filename);
 	if (!flags)
@@ -276,7 +284,7 @@ void Response::finish_cgi(std::shared_ptr<ClientConnection> req)
 bool Response::init_cgi(std::shared_ptr<ClientConnection> client)
 {
 	auto req = _request.lock();
-		if (!req) return false;
+	if (!req) return false;
 	if (req->_method == METHOD_DELETE)
 	{
 		_status_code = STATUS_METHOD_NOT_ALLOWED;
@@ -305,7 +313,7 @@ void Response::set_error(int code)
 void Response::set_error_page(int code)
 {
 	auto req = _request.lock();
-		if (!req) return ;
+	if (!req) return ;
 	if (_body.str().size() > 0)
 		return;
 	if (!(code >= 400 && code <= 599))
@@ -353,9 +361,16 @@ void Response::generate_error_page(int code)
 
 std::shared_ptr<Location> Response::find_location(void)
 {
+	std::cout << "wtffffffffffffffffffffffffffffffffffff\n";
 	auto req = _request.lock();
-		if (!req) return nullptr;
+	if (!req) return nullptr;
+	std::cout << "wwwtffffffffffffffffffffffffffffffffffff\n";
+	if (req->conf->getLocations().empty()) {
+		std::cerr << "❌ ERROR: No parts found in multipart POST!\n";
+		return nullptr; // Or STATUS_INTERNAL_ERROR
+	}
 	std::shared_ptr<Location> ret = req->conf->getLocations().front();
+	std::cout << "wwwwwtffffffffffffffffffffffffffffffffffff\n";
 	Location defaultpath;
 	
 	
@@ -387,7 +402,7 @@ std::shared_ptr<Location> Response::find_location(void)
 bool Response::directory_index(std::string path)
 {
 	auto req = _request.lock();
-		if (!req) return false;
+	if (!req) return false;
 	DIR *dir;
 	struct dirent *entry;
 

@@ -177,10 +177,10 @@ bool Cgi::start(std::shared_ptr<ClientConnection> client)
 		client->cgi_fd_write = fd_to[WRITE];
 		client->pid = pid;
 
-		if (client->_method == METHOD_GET && client->cgi_fd_write >= 0) {
-			close(client->cgi_fd_write);
-			client->cgi_fd_write = -1;
-		}
+		// if (client->_method == METHOD_GET && client->cgi_fd_write >= 0) {
+		// 	close(client->cgi_fd_write);
+		// 	client->cgi_fd_write = -1;
+		// }
 	}
 	return ret;
 }

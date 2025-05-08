@@ -166,7 +166,7 @@ void Location::_addIndex(std::string &line)
 
 void Location::_addAutoIndex(std::string &line)
 {
-	std::regex ptrn("^\\s*autoindex\\s+(on|off)\\s*;\\s*$");
+	std::regex ptrn("^\\s*autoindex\\s+(on|off)\\s*$");
 	std::smatch match_res;
 
 	if (_autoIndexSet)
