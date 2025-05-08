@@ -188,11 +188,26 @@ int Response::handle_get(void)
 			return STATUS_INTERNAL_ERROR;
 		return STATUS_OK;
 	}
-	std::cout << "ccccccccccccccccccccccccccccome here?\n";
+//	std::cout << "ccccccccccccccccccccccccccccome here?\n";
 	if (flags & FS_ISDIR)
 	{
 		if (req->_uri.back() != '/')
 			return STATUS_NOT_FOUND;
+
+		// if empty offer index first
+		if (!_location->_index.empty())
+		{
+			std::string pathToIndex = filename + _location->_index;
+			int indexFlags = Io::file_stat(pathToIndex);
+			if (indexFlags & FS_ISFILE)
+			{
+				if (!Io::read_file(pathToIndex, _body))
+					return STATUS_INTERNAL_ERROR;
+				return STATUS_OK;
+			}
+		}
+
+		// fallback autoinex 
 		if (!_location->_autoIndex)
 		{
 			return STATUS_FORBIDDEN;
