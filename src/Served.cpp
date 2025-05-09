@@ -307,25 +307,26 @@ void Served::runEventloop()
 			break;//break the while loop and cleanup();
 		}
 		
-		//timeout control
 		auto now = std::chrono::steady_clock::now();
-		// const int TIMEOUT_SECONDS = 60;
-		for (auto it = clients.begin(); it != clients.end(); ++it) 
-		{
-			int cfd = it->first;
-			std::shared_ptr<ClientConnection> conn = it->second;
-		
-			auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn->getLastActivity()).count();
-			std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
-			// std::shared_ptr<ClientConnection>& conn = it->second;
-			if ( duration > 10)
-			{
-				std::cout<< "Client: " << cfd << " timeout." << std::endl;
-				close (cfd);
-				it = clients.erase(it);
-				continue;
-			}
-		}
+		for (auto it = clients.begin(); it != clients.end();) 
+        {
+            int cfd = it->first;
+            std::shared_ptr<ClientConnection> conn = it->second;
+        
+            auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - conn->getLastActivity()).count();
+            std::cout << "[timeout check] client " << cfd << " inactive for " << duration << "s" << std::endl;
+            // std::shared_ptr<ClientConnection>& conn = it->second;
+            if ( duration > 10)
+            {
+                std::cout<< "Client: " << cfd << " timeout." << std::endl;
+                close (cfd);
+                FD_CLR(cfd, &readSet);
+                it = clients.erase(it);
+                // continue;
+            }
+            else
+                ++it;
+        } 
 		
 		if (readycount == 0)
 		{

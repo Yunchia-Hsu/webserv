@@ -194,18 +194,24 @@ int Response::handle_get(void)
 		if (req->_uri.back() != '/')
 			return STATUS_NOT_FOUND;
 
-		// if empty offer index first
-		if (!_location->_index.empty())
-		{
-			std::string pathToIndex = filename + _location->_index;
-			int indexFlags = Io::file_stat(pathToIndex);
-			if (indexFlags & FS_ISFILE)
+		
+		std::string index = _location->_index.empty() ? "index.html" : _location->_index;
+		std::string pathToIndex = filename;
+		if (pathToIndex.back() != '/')
+			pathToIndex += '/';
+		pathToIndex += index;
+
+
+
+		int indexFlags = Io::file_stat(pathToIndex); // check that the file exists and can be used as wanted
+		if (indexFlags & FS_ISFILE)
 			{
 				if (!Io::read_file(pathToIndex, _body))
 					return STATUS_INTERNAL_ERROR;
 				return STATUS_OK;
 			}
 		}
+		
 
 		// fallback autoinex 
 		if (!_location->_autoIndex)
@@ -214,10 +220,8 @@ int Response::handle_get(void)
 		}
 		if (!directory_index(filename))
 			return STATUS_INTERNAL_ERROR;
+		
 		return STATUS_OK;
-	}
-	//std::cout << "hhhhhhhhhhhhhhhhhhhhhhhhhhhhere is the error place\n";
-	return STATUS_NOT_FOUND;
 }
 
 int Response::handle_post(void)
