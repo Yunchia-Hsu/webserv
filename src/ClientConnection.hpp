@@ -60,40 +60,6 @@ struct Part
 #include "confiParser.hpp"
 #include "response.hpp"
 
-// #define URI_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;="
-// #define FIELD_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-
-// enum {
-// 	BODY_TYPE_NORMAL,
-// 	BODY_TYPE_CHUNKED,
-// 	BODY_TYPE_MULTIPART,
-// };
-
-// enum class State {
-//     OK,
-// 	ERROR,
-// 	STATUSLINE,
-// 	HEADER,
-//     BODY,
-// 	CHUNKED,
-// 	MULTIPART,
-//     CGIHEADER,
-// 	CGIBODY,
-//     PARTIALSTATUS,
-// 	PARTIALHEADER,
-// 	PARTIALCHUNKED,
-// 	PARTIALCGI,
-// 	PARTIALBODY,
-// };
-
-// struct Part
-// {
-//     std::string data;
-// 	std::string name;
-// 	std::string filename;
-// 	std::string content_type;
-// };
-
 class Served;
 
 class ClientConnection
@@ -141,12 +107,10 @@ public:
     bool needWrite ();
     bool needRead ();
     ClientConnection(int cfd, int port, Served *serve);
-	//ClientConnection(int cfd, std::shared_ptr<ServerConf> serverConf, Served* serve);
     int readData();
    	int checkend(std::string str, std::string end); //return 0 done, 1 not done
     void appendToWriteBuffer(const std::string &data);
     int writeData();
-    // int writeData(std::shared_ptr<ClientConnection> client);
 	int getServerPort() const { return serverPort; }
     std::string get_buffer()
     {

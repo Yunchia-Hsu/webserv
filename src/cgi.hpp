@@ -10,8 +10,6 @@ extern std::unordered_map<std::string, std::string> cgi_map;
 class Location;
 class ClientConnection;
 
-static_assert(__cplusplus >= 201703L, "C++17 is not enabled!");
-
 class Cgi {
     private:
 	std::string _document_root;
@@ -25,8 +23,7 @@ class Cgi {
 	void env_set_vars(std::shared_ptr<ClientConnection> request);
 
 	bool parent_init(int pid, int *fd_from, int *fd_to);
-	void child_process(std::shared_ptr<ClientConnection> client,
-			   int *fd_from, int *fd_to);
+	void child_process(std::shared_ptr<ClientConnection> client, int *fd_from, int *fd_to);
 
     public:
 	Cgi();

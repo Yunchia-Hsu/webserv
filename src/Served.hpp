@@ -39,9 +39,9 @@ class Served
 
 		bool init_cgi_fds(std::shared_ptr<ClientConnection> conn);
 		bool mod_fd(int fd, int ctl, int mask, std::shared_ptr<ClientConnection> cl);
-		bool add_fd(int fd, bool want_read, bool want_write, std::shared_ptr<ClientConnection> cl, fd_set readSet, fd_set writeSet, int maxfd);
-		void remove_fd(int fd, fd_set readSet, fd_set writeSet, int maxfd);
-		bool init_cgi_fds(std::shared_ptr<ClientConnection> conn, fd_set readSet, fd_set writeSet, int maxfd);
+		bool add_fd(int fd, bool want_read, bool want_write, std::shared_ptr<ClientConnection> cl, fd_set& readSet, fd_set& writeSet, int& maxfd);
+		void remove_fd(int fd, fd_set& readSet, fd_set& writeSet, int& maxfd);
+		bool init_cgi_fds(std::shared_ptr<ClientConnection> conn, fd_set& readSet, fd_set& writeSet, int& maxfd);
 		void finish_cgi_client(std::shared_ptr<ClientConnection> cgi_client,
 			fd_set& readSet, fd_set& writeSet, int& maxfd);
 		bool handle_cgi_read(std::shared_ptr<ClientConnection> client,

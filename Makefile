@@ -20,7 +20,7 @@ OBJ_DIR = obj
 
 SRC = src/main.cpp src/confiParser.cpp src/RouteConf.cpp \
 	  src/ServerConf.cpp src/Served.cpp src/ClientConnection.cpp \
-	  src/cgi.cpp src/io.cpp src/location.cpp src/request.cpp src/response.cpp src/utils.cpp
+	  src/cgi.cpp src/io.cpp src/location.cpp src/response.cpp src/utils.cpp
 
 OBJ = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRC)) #$(SRC:.cpp=.o)
 

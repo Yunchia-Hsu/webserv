@@ -42,8 +42,6 @@ Response::Response(std::shared_ptr<ClientConnection> client)
 		return;
 	}
 
-	// if (_location->_session) _handleCookies();
-
 	if (req->_method == METHOD_GET)
 		_status_code = handle_get();
 	if (req->_method == METHOD_POST)
@@ -318,10 +316,6 @@ void Response::set_error_page(int code)
 		return;
 	if (!(code >= 400 && code <= 599))
 		return;
-	/*
-	_body.str("");
-	_body.clear();
-	*/
 	_additional_headers["Content-Type"] = "text/html";
 
 	if (!req->conf || req->conf->errorPages.count(code) == 0)           //will check it later/////////////
@@ -361,16 +355,16 @@ void Response::generate_error_page(int code)
 
 std::shared_ptr<Location> Response::find_location(void)
 {
-	std::cout << "wtffffffffffffffffffffffffffffffffffff\n";
+	// std::cout << "wtffffffffffffffffffffffffffffffffffff\n";
 	auto req = _request.lock();
 	if (!req) return nullptr;
-	std::cout << "wwwtffffffffffffffffffffffffffffffffffff\n";
+	// std::cout << "wwwtffffffffffffffffffffffffffffffffffff\n";
 	if (req->conf->getLocations().empty()) {
 		std::cerr << "❌ ERROR: No parts found in multipart POST!\n";
 		return nullptr; // Or STATUS_INTERNAL_ERROR
 	}
 	std::shared_ptr<Location> ret = req->conf->getLocations().front();
-	std::cout << "wwwwwtffffffffffffffffffffffffffffffffffff\n";
+	// std::cout << "wwwwwtffffffffffffffffffffffffffffffffffff\n";
 	Location defaultpath;
 	
 	
