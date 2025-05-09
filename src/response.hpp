@@ -16,6 +16,9 @@ class Response {
 
 	std::map<std::string, std::string> _additional_headers;
 
+//	Location* _location;
+	ServerConf* _server = nullptr;
+
 	int _status_code;
 	std::string _setCookie;
 
@@ -49,10 +52,14 @@ class Response {
 	std::ostringstream _body;
 	std::ostringstream buffer;
 
-	Response(std::shared_ptr<ClientConnection> client);
+	Response(std::shared_ptr<ClientConnection> client, ServerConf* server);
 	// Response(ClientConnection* client, std::vector<std::shared_ptr<Location>>& locations);
 	void finish_response(void);
 	void finish_cgi(std::shared_ptr<ClientConnection> req_cgi);
 	void set_error(int code);
 	~Response();
+
+	void setServer(ServerConf* server);
+
+	Location* findBestLocation(const std::vector<std::shared_ptr<Location>>& locations, const std::string& uri);
 };

@@ -50,6 +50,7 @@ class Request {
         bool host_matched;
         std::vector<Part> parts;
         std::shared_ptr<ConfiParser> conf;
+        std::shared_ptr<ServerConf> _server;
 
         Request();
         Request(bool cgi);
@@ -58,6 +59,8 @@ class Request {
         State parse(State s_state, char *data, size_t size);
         void check_body_limit(void);
 	    static bool is_method_allowed(std::vector<std::string> allowed, std::string method);
+
+        
     
     private:
         size_t _bytes_read;
@@ -75,4 +78,5 @@ class Request {
         void parse_multipart(void);
 
         State parse_header_cgi(void);
+
 };
