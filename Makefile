@@ -11,7 +11,7 @@ CXX = c++
 # =======
 CXXFLAGS = -Wall -Wextra -Werror -std=c++17
 LDFLAGS = -lstdc++fs 
-NAME = webserved
+NAME = webserv
 # >>>>>>> 282e34f (wait for merge and push)
 # >>>>>>> 6d07567 (wait for merge and push)
 
