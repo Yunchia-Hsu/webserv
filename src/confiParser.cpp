@@ -6,6 +6,10 @@ ConfiParser::ConfiParser() {}
 
 ConfiParser::~ConfiParser()  {}
 
+std::vector<ServerConf>& ConfiParser::getServers() {
+	return servers;
+}
+
 void ConfiParser::parseFile(const std::string& filename)
 {
     std::cout << "Starting to PARSE the file" << std::endl;  /// DEBUGPRINT
@@ -128,7 +132,6 @@ void ConfiParser::serverKeys(const std::string& keyWord, const std::string& valu
 		while (iss >> name)
 		{
 			server.serverNames.push_back(name);
-			// std::cout << "nnnnnnnnn-------------------------------------------------nnnnname: " << name << std::endl;
 		}
 	}
 	else if (keyWord == "root")
@@ -206,10 +209,18 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 			value.pop_back();
 		if (keyWord == "location")
 		{
+			std::smatch match;
+			std::regex location_regex("^\\s*location\\s+(\\S+)\\s*\\{?");
+			if (!std::regex_match(line, match, location_regex))
+				throw std::runtime_error("Malformed location directive: " + line);
+		
+			std::string location_path = match[1];
+
 			std::shared_ptr<Location> location(new Location(&server));
-			location->parseLocation(file, line);
+			location->parseLocation(file, location_path);
 		
 			server.locations.push_back(location);
+			std::cout << "✅ Parsed location path: " << location->_path << std::endl;
 		}
 
 		/* 
@@ -266,8 +277,6 @@ void ConfiParser::parseServerStuff(std::ifstream& file, ServerConf& server)
 
 	if (server.locations.empty())
 		std::cerr << "⚠️ Warning: Server block has no locations defined\n";
-
-//	server.printConfig(); // DEBUGPRINT
 }
 
 void ConfiParser::routeKeys(const std::string& keyWord, const std::string& value, RouteConf& route)
@@ -276,6 +285,18 @@ void ConfiParser::routeKeys(const std::string& keyWord, const std::string& value
 	{
 		route.root = value;
 	}
+	// if (keyWord == "root")
+	// {
+	// 	struct stat mode;
+	// 	if (stat(value.c_str(), &mode) != 0)
+	// 		throw std::runtime_error("routeKeys: root path does not exist!");
+
+	// 	if (!(mode.st_mode & S_IFDIR))
+	// 		throw std::runtime_error("routeKeys: root is not a directory!");
+
+	// 	route.root = std::filesystem::canonical(value).generic_string();
+	// }
+
 	else if (keyWord == "cgi_path")
 	{
 		route.CGIPath = value;
@@ -393,7 +414,6 @@ void ConfiParser::parseRouteStuff(std::ifstream& file, RouteConf& route)
 			route.nestedRoutes.push_back(nestedRoute);
 		}
 	}
-//	route.printConfig(); // DEBUGPRINT
 }
 
 //DEBUG FUNCTION

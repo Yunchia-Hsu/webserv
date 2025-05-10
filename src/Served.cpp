@@ -418,7 +418,10 @@ void Served::runEventloop()
 			{
 				int sent = 0;
 				if (!conn->resp) {
-					conn->resp = std::make_shared<Response>(conn);
+					if (conn->conf)
+						conn->resp = std::make_shared<Response>(conn, conn->conf.get());
+					else
+						conn->resp = std::make_shared<Response>(conn, nullptr);
 					if (conn->conn_type == CONN_WAIT_CGI) {
 						if (init_cgi_fds(conn, readSet, writeSet, maxfd)) {
 							// std::cout << "fffffinally, come here\n";

@@ -16,9 +16,8 @@ ServerConf:: ServerConf(std::string& name)
 
 void ServerConf::printConfig() const
 {
-    std::cout << "Server Configuration:" << std::endl;
+//    std::cout << "Name: " << serverNames << std::endl;
     std::cout << "Port: " << port << std::endl;
-    //std::cout << "Server Name: " << serverNames << std::endl;
   
     if (!root.empty())
         std::cout << "Root Directory: " << root << std::endl;
@@ -29,14 +28,6 @@ void ServerConf::printConfig() const
     std::cout << "Error Pages:" << std::endl;
     for (const auto& entry : errorPages)
         std::cout << "  " << entry.first << " -> " << entry.second << std::endl;
-
-    std::cout << "Routes:" << std::endl;
-    for (const auto& route : routes)
-        std::cout << "  " << route << std::endl;
-
-    std::cout << "Extra Configurations:" << std::endl;
-    for (const auto& entry : extraConfi)
-        std::cout << "  " << entry.first << " = " << entry.second << std::endl;
 }
 
 std::vector<std::shared_ptr<Location> > &ServerConf::getLocations()
