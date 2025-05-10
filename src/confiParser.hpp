@@ -44,7 +44,7 @@ class ConfiParser
         void parseListener(const std::string& rawValue, std::string& hostOut, int& portOut);
         
         //getter for servers!
-        std::vector<ServerConf>& getServers() { return servers; }
+        std::vector<ServerConf>& getServers();// { return servers; }
 
 
         void testPrinter() const;

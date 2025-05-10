@@ -52,13 +52,6 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 	if (!configFile)
 		throw std::runtime_error("parseLocation: Empty location block!");
 
-	// -  We don't want to do this as it is too strict and can create a crash if not clean user input
-	// - we should not have { anymore as we skipped it in previous step
-	// if (!std::regex_match(line, std::regex("\t\\{\\s*")))
-	// 	throw std::runtime_error("parseLocation: No '{' opening location block!");
-	// instead
-	
-
 	while (Utils::skipEmptyLines(configFile, line), configFile)
 	{
 
@@ -73,7 +66,6 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 				break;
 			continue;
 		}
-		// std::cout << "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmethod: " <<match_res[1] << std::endl;
 		
 		std::string keyword = match_res[1];
 		try {
@@ -103,14 +95,10 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 		{
 			std::cerr << "⚠️ Error parsing line: " << line << " -" << e.what() << std::endl;
 		}
-			//throw std::runtime_error(
-			//	"parseLocation: Unknown element in location block: " +
-			//	line);
 	}
 
 	// We don't want to do this as it is too strict and can create a crash if not clean user input	
 	// if (!std::regex_match(line, std::regex("\t\\}\\s*")))
-	// 	throw std::runtime_error("parseLocation: No '}' closing location block!");
 	if (line.find("}") == std::string::npos)
 		throw std::runtime_error("Location parser is angry, no '{' on location block!");
 
@@ -259,30 +247,6 @@ void Location::_addUpload(std::string &line)
 	_uploadPath = std::filesystem::canonical(_uploadPath).generic_string();
 	// std::cout << "___________________________uploadPath: " << _uploadPath << std::endl;
 }
-
-// void Location::_addCgi(std::string &line)
-// {
-// 	// Accept: "cgi_pass /path/to/interpreter;"
-// 	std::regex ptrn("^\\s*cgi_pass\\s+([^\\s]+)\\s*;?\\s*$");
-// 	std::smatch match_res;
-// 	struct stat mode;
-
-// 	if (!_cgi.empty())
-// 		throw std::runtime_error("_addCgi: Cannot add location cgi multiple times!");
-
-// 	if (!std::regex_match(line, match_res, ptrn))
-// 		throw std::runtime_error("_addCgi: Expected format: \"cgi_pass /path/to/interpreter;\"");
-
-// 	std::string path = match_res[1];
-// 	if (stat(path.c_str(), &mode) != 0)
-// 		throw std::runtime_error("_addCgi: Specified path doesn't exist: " + path);
-
-// 	if (!S_ISREG(mode.st_mode))
-// 		throw std::runtime_error("_addCgi: Specified path isn't a file!");
-
-// 	// You can set this to a default extension like .bla
-// 	_cgi[".bla"] = path;
-// }
 
 void Location::_addCgi(std::string &line)
 {
