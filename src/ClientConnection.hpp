@@ -148,6 +148,7 @@ public:
     bool host_matched;
     std::vector<Part> parts;
     std::shared_ptr<ServerConf> conf;
+    bool want_read = true;
 
     ClientConnection();
     ClientConnection(bool cgi);

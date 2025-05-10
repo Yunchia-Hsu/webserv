@@ -250,6 +250,18 @@ void Served::runEventloop()
 			clients.clear();
 			break;//break the while loop and cleanup();
 		}
+
+		for (const auto& it : clients) {
+			int fd = it.first;
+			std::shared_ptr<ClientConnection> conn = it.second;
+		
+			// Only process CGI read fds that are ready
+			std::cout << "In here we still have some of clients: " << clients.size() << std::endl;
+			if (FD_ISSET(fd, &readSet) && _cgi_to_client.count(fd)) {
+				handle_cgi_read(conn, readSet, writeSet, maxfd);
+			}
+		}
+		
 		
 		//timeout control
 		auto now = std::chrono::steady_clock::now();
@@ -267,6 +279,7 @@ void Served::runEventloop()
 				std::cout<< "Client: " << cfd << " timeout." << std::endl;
 				close (cfd);
 				FD_CLR(cfd, &readSet);
+				std::cout << "so it close one client isn't?\n";
 				it = clients.erase(it);
 				// continue;
 			}
@@ -308,7 +321,14 @@ void Served::runEventloop()
 			}
 		}
 
-		
+		// for (std::map<int, std::shared_ptr<ClientConnection>>::iterator it = clients.begin(); it != clients.end(); it++) {
+		// 	std::shared_ptr<ClientConnection> conn = it->second;
+		// 	if (conn->conn_type == CONN_CGI) {
+		// 		handle_cgi_read(conn, readSet, writeSet, maxfd);
+		// 		// continue;
+		// 		// break;
+		// 	}
+		// }
 
 		//檢查所有現有 client FD，是否可讀
 		// auto it = clients.begin();
@@ -322,15 +342,22 @@ void Served::runEventloop()
 			std::cout << "LLLLLet's start new round, the current client fd is: " << conn->fd << std::endl;
 
 			// bool cgi_finish = false;
-			// while (conn->conn_type == CONN_CGI && cgi_finish == false) 
-			// 	cgi_finish = handle_cgi_read(conn, readSet, writeSet, maxfd);
+			// while (FD_ISSET(cfd, &readSet) && conn->conn_type == CONN_CGI && cgi_finish == false) {
+			// 	// if (FD_ISSET(conn->fd, &readSet))
+			// 		cgi_finish = handle_cgi_read(conn, readSet, writeSet, maxfd);
+			// }
 			// cgi_finish = true;
 			
-			if (conn->conn_type == CONN_CGI) {
-				handle_cgi_read(conn, readSet, writeSet, maxfd);
-				// continue;
-				// break;
-			}
+			// if (FD_ISSET(cfd, &readSet) && conn->conn_type == CONN_CGI) {
+			// 	handle_cgi_read(conn, readSet, writeSet, maxfd);
+			// 	// continue;
+			// 	// break;
+			// }
+
+			// Skip CGI fds (handled separately)
+			// if (_cgi_to_client.count(cfd)) {
+			// 	continue;
+			// }
 
 			//if can read
 			if (FD_ISSET(cfd, &readSet))
@@ -341,6 +368,7 @@ void Served::runEventloop()
 				{
 					//std::cout << "Client: " << cfd << " disconnected. hahaha\n";
 					close(cfd);
+					std::cout << "so it close one client in read part isn't?\n";
 					it = clients.erase(it);
 					
 					FD_CLR(cfd, &readSet);
@@ -424,6 +452,7 @@ void Served::runEventloop()
 					
 					conn->resp.reset();
 					close(cfd);
+					std::cout << "so it close one client in write part isn't?\n";
 					it = clients.erase(it);
 					
 					closed = true;
@@ -474,6 +503,7 @@ void Served::remove_fd(int fd, fd_set& readSet, fd_set& writeSet, int& maxfd)
 
 	FD_CLR(fd, &readSet);
 	FD_CLR(fd, &writeSet);
+	std::cout << "so it close one client in remove_fd isn't?\n";
 	clients.erase(fd);
 	_cgi_to_client.erase(fd);
 
@@ -565,7 +595,8 @@ bool Served::handle_cgi_read(std::shared_ptr<ClientConnection> client,
 		std::cerr << "[ERROR] read() failed on fd " << client->fd
 	          << " with errno " << errno << ": " << strerror(errno) << std::endl;
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
-			FD_SET(client->fd, &readSet);
+			// FD_SET(client->fd, &readSet);
+			client->want_read = false;
 			return false;
 		}
 		// remove_fd(client->fd, readSet, writeSet, maxfd);
@@ -585,6 +616,7 @@ bool Served::handle_cgi_read(std::shared_ptr<ClientConnection> client,
 	}
 	// Still expecting more data from CGI — ensure fd is in readSet
 	FD_SET(client->fd, &readSet);
+	// client->want_read = true;
 	// add_fd(client->fd, false, true, client, readSet, writeSet, maxfd);
 	if (client->fd > maxfd)
 		maxfd = client->fd;

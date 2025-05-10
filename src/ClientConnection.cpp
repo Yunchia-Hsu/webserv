@@ -78,7 +78,7 @@ bool ClientConnection::needRead ()
 {
     //depend on ConnectionState
     //connectionstate are PROCESSING / WRITE_RESPONSE return false 
-    return true;
+    return want_read;
 }
 
 int ClientConnection::readData() 
