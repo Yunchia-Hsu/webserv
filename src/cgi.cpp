@@ -187,10 +187,8 @@ bool Cgi::is_cgi(std::shared_ptr<Location> location, std::string uri) {
 
 	std::string cgi_uri = location->_rootPath + uri;
 	std::string ext = Io::get_file_ext(cgi_uri);
-	std::cout << "dddddllllllllet me seesee: " << ext << std::endl;
 	if (location->_cgi.count(ext) == 0)
 		return false;
-	std::cout << "wwwwssllllllllet me seesee\n";
 	int flags = Io::file_stat(cgi_uri);
 	if (!(flags & FS_ISFILE) || !(flags & FS_READ))
 		return false;
