@@ -4,9 +4,7 @@ Location::Location(ServerConf *srvConf)
 	: _serverConfig(srvConf)
 	, _autoIndex(false)
 	, _autoIndexSet(false)
-	, _redirectCode(0)
-	, _session(false)
-	, _sessionSet(false) {}
+	, _redirectCode(0) {}
 
 Location::Location(const Location &original)
 	: _serverConfig(original._serverConfig)
@@ -54,8 +52,6 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 				_addIndex(line);
 			else if (keyword == "autoindex")
 				_addAutoIndex(line);
-			else if (keyword == "session")
-				_addSession(line);
 			else if (keyword == "allow_methods" || keyword == "methods")
 				_addMethods(line);
 			else if (keyword == "return")
@@ -136,23 +132,6 @@ void Location::_addAutoIndex(std::string &line) {
 	else
 		_autoIndex = 0;
 	_autoIndexSet = true;
-}
-
-void Location::_addSession(std::string &line) {
-	std::regex ptrn("^\\s*session\\s+(on|off)\\s*;\\s*$");
-	std::smatch match_res;
-
-	if (_sessionSet)
-		throw std::runtime_error(
-			"_addSession: Cannot add sesseion element multiple times!");
-	if (!std::regex_match(line, match_res, ptrn))
-		throw std::runtime_error(
-			"_addSession: Expected format: \"session [on/off];\"");
-	if (match_res[1] == "on")
-		_session = 1;
-	else
-		_session = 0;
-	_sessionSet = true;
 }
 
 void Location::_addMethods(std::string &line) {
