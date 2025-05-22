@@ -100,8 +100,7 @@ std::unordered_map<std::string, std::string> mime_map = {
 	{ "default", "text/plain" }
 };
 
-int Utils::decode_hex(const char *s, int *out_len)
-{
+int Utils::decode_hex(const char *s, int *out_len) {
 	int ret = 0;
 	int val = 0;
 	char c;
@@ -109,8 +108,7 @@ int Utils::decode_hex(const char *s, int *out_len)
 
 	if (std::strchr(charset, *s) == NULL)
 		return -1;
-	while (std::strchr(charset, *s))
-	{
+	while (std::strchr(charset, *s)) {
 		c = *s;
 		if (c >= '0' && c <= '9')
 			val = c - '0';
@@ -125,14 +123,11 @@ int Utils::decode_hex(const char *s, int *out_len)
 	return ret;
 }
 
-std::string Utils::url_decode(const std::string &s)
-{
+std::string Utils::url_decode(const std::string &s) {
 	std::string res = "";
 
-	for (size_t i = 0; i < s.length(); i++)
-	{
-		if (s[i] == '%' && (s.length() - i) >= 2)
-		{
+	for (size_t i = 0; i < s.length(); i++) {
+		if (s[i] == '%' && (s.length() - i) >= 2) {
 			int out;
 			sscanf(s.substr(i + 1, 2).c_str(), "%x", &out);
 			char ch = static_cast<char>(out);
@@ -145,8 +140,7 @@ std::string Utils::url_decode(const std::string &s)
 	return res;
 }
 
-std::string Utils::date_str_now(void)
-{
+std::string Utils::date_str_now(void) {
 	time_t t;
 	struct tm *time_struct;
 	char buf[128];
@@ -157,21 +151,7 @@ std::string Utils::date_str_now(void)
 	return std::string(buf);
 }
 
-std::string Utils::date_str_hour_from_now(void)
-{
-	time_t t;
-	struct tm *time_struct;
-	char buf[128];
-
-	std::time(&t);
-	time_struct = std::gmtime(&t);
-	time_struct->tm_hour = (time_struct->tm_hour + 1) % 24;
-	std::strftime(buf, sizeof(buf) - 1, "%a, %d %b %Y %H:%M:%S GMT", time_struct);
-	return std::string(buf);
-}
-
-std::string Utils::time_to_str(time_t t)
-{
+std::string Utils::time_to_str(time_t t) {
 	std::string res = "";
 	char time_buf[64];
 	struct tm* ti = localtime(&t);
@@ -182,8 +162,7 @@ std::string Utils::time_to_str(time_t t)
 	return std::string(time_buf);
 }
 
-std::string Utils::get_key_data(std::string &buf, std::string key)
-{
+std::string Utils::get_key_data(std::string &buf, std::string key) {
 	size_t pos = buf.find(key + "=\"");
 	if (pos == std::string::npos)
 		return "";
@@ -194,8 +173,7 @@ std::string Utils::get_key_data(std::string &buf, std::string key)
 	return buf.substr(pos, end - pos);
 }
 
-std::string Utils::safe_substr(std::string &buf, std::string before, std::string after)
-{
+std::string Utils::safe_substr(std::string &buf, std::string before, std::string after) {
 	size_t pos = buf.find(before);
 	if (pos == std::string::npos)
 		return "";
@@ -204,18 +182,6 @@ std::string Utils::safe_substr(std::string &buf, std::string before, std::string
 		return buf.substr(pos + before.size());
 	return buf.substr(pos, end - pos);
 }
-
-std::string Utils::trim_start(std::string &str, const std::string &needle)
-{
-	std::string result = str;
-	size_t pos = result.find(needle);
-
-	if (pos == std::string::npos)
-		return result;
-	result.erase(0, pos + needle.size());
-	return result;
-}
-
 
 int Utils::content_len_int(const std::string& input) {
 	int result = -1;
@@ -229,39 +195,33 @@ int Utils::content_len_int(const std::string& input) {
 	return result;
 }
 
-void Utils::removeComments(std::string &line)
-{
+void Utils::removeComments(std::string &line) {
 	line = std::regex_replace(line, std::regex("#.*$"), "");
 }
 
-std::string Utils::leftWspcTrim(std::string string)
-{
+std::string Utils::leftWspcTrim(std::string string) {
 	const char *ws = " \t\n\r\f\v";
 	string.erase(0, string.find_first_not_of(ws));
 	return string;
 }
 
-std::string Utils::rightWspcTrim(std::string string)
-{
+std::string Utils::rightWspcTrim(std::string string) {
 	const char *ws = " \t\n\r\f\v";
 	string.erase(string.find_last_not_of(ws) + 1);
 	return string;
 }
 
-std::string Utils::WspcTrim(std::string string)
-{
+std::string Utils::WspcTrim(std::string string) {
 	return leftWspcTrim(rightWspcTrim(string));
 }
 
-void Utils::skipEmptyLines(std::ifstream &configFile, std::string &line)
-{
+void Utils::skipEmptyLines(std::ifstream &configFile, std::string &line) {
 	while ((std::getline(configFile, line)) &&
 	       (removeComments(line), WspcTrim(line).empty()))
 		;
 }
 
-std::string Utils::trimLine(const std::string& str)
-{
+std::string Utils::trimLine(const std::string& str) {
 	size_t first = str.find_first_not_of(" \t");
 	if (first == std::string::npos)
 		return "";

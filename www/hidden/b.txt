@@ -1,3 +1,0 @@
-This is a test file B
-run with 
-``` curl http://localhost:8000/dirlist/b.txt ```

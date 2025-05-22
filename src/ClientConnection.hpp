@@ -60,40 +60,6 @@ struct Part
 #include "confiParser.hpp"
 #include "response.hpp"
 
-// #define URI_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;="
-// #define FIELD_CHARS "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-
-// enum {
-// 	BODY_TYPE_NORMAL,
-// 	BODY_TYPE_CHUNKED,
-// 	BODY_TYPE_MULTIPART,
-// };
-
-// enum class State {
-//     OK,
-// 	ERROR,
-// 	STATUSLINE,
-// 	HEADER,
-//     BODY,
-// 	CHUNKED,
-// 	MULTIPART,
-//     CGIHEADER,
-// 	CGIBODY,
-//     PARTIALSTATUS,
-// 	PARTIALHEADER,
-// 	PARTIALCHUNKED,
-// 	PARTIALCGI,
-// 	PARTIALBODY,
-// };
-
-// struct Part
-// {
-//     std::string data;
-// 	std::string name;
-// 	std::string filename;
-// 	std::string content_type;
-// };
-
 class Served;
 
 class ClientConnection
@@ -190,7 +156,6 @@ public:
     ClientConnection(int cgi_fd, Served *serve);
 
     State parse(State s_state,  std::string data, size_t size);
-    void check_body_limit(void);
     static bool is_method_allowed(std::vector<std::string> allowed, std::string method);
     bool has_pending_write_to_cgi() const;
 };

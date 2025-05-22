@@ -6,45 +6,29 @@ Location::Location(ServerConf *srvConf)
 	, _autoIndexSet(false)
 	, _redirectCode(0)
 	, _session(false)
-	, _sessionSet(false)
-{
-}
+	, _sessionSet(false) {}
 
 Location::Location(const Location &original)
 	: _serverConfig(original._serverConfig)
 	, _path(original._path)
 	, _rootPath(original._rootPath)
 	, _autoIndex(original._autoIndex)
-	, _methods(original._methods)
-{
-}
+	, _methods(original._methods) {}
 
-Location::Location()
-{
-}
+Location::Location() {}
 
-Location::~Location()
-{
-}
+Location::~Location() {}
 
-Location &Location::operator=(const Location &original)
-{
-	if (this != &original)
-	{
+Location &Location::operator=(const Location &original) {
+	if (this != &original) {
 		this->~Location();
 		new (this) Location(original);
 	}
 	return (*this);
 }
 
-//void Location::parseLocation(std::ifstream &configFile, std::string &location_line)
-void Location::parseLocation(std::ifstream &configFile, const std::string& path)
-{
-	
+void Location::parseLocation(std::ifstream &configFile, const std::string& path) {
 	std::string line;
-	
-	//Parser should handle this already? 21.4
-	 //_addPath(location_line);
 	
 	this->_path = path;
 
@@ -52,16 +36,11 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 	if (!configFile)
 		throw std::runtime_error("parseLocation: Empty location block!");
 
-	while (Utils::skipEmptyLines(configFile, line), configFile)
-	{
-
-//		std::cout << "[LocationParser Line] " << line << std::endl;
+	while (Utils::skipEmptyLines(configFile, line), configFile){
 		std::smatch match_res;
-		//std::regex ptrn("^\t{2}(\\w+).*");
 		std::regex ptrn("^\\s*(\\w+)\\s+.*");  // ALLOW spaces or tabs for stupid user input 
 		
-		if (!std::regex_match(line, match_res, ptrn))
-		{
+		if (!std::regex_match(line, match_res, ptrn)) {
 			if (line.find("}") != std::string::npos)
 				break;
 			continue;
@@ -91,25 +70,17 @@ void Location::parseLocation(std::ifstream &configFile, const std::string& path)
 			else
 				std::cerr << "Unown element error in location block! Line: '" << line << "' Keyword: '" << keyword << "'\n";
 		}
-		catch (const std::exception& e)
-		{
+		catch (const std::exception& e) {
 			std::cerr << "⚠️ Error parsing line: " << line << " -" << e.what() << std::endl;
 		}
 	}
 
-	// We don't want to do this as it is too strict and can create a crash if not clean user input	
-	// if (!std::regex_match(line, std::regex("\t\\}\\s*")))
 	if (line.find("}") == std::string::npos)
 		throw std::runtime_error("Location parser is angry, no '{' on location block!");
-
-	// if (_methods.empty() || 
-	// !((_rootPath.size() && _autoIndexSet && !_redirectPath.size()) || (!_rootPath.size() && !_autoIndexSet && _redirectPath.size())))
-	// 	throw std::runtime_error("parseLocation: Invalid location block");
 }
 
 // Setters
-void Location::_addPath(std::string &line)
-{
+void Location::_addPath(std::string &line) {
 	std::regex ptrn("^\\s*location\\s+(\\S+)\\s*$");
 	std::smatch match_res;
 
@@ -119,8 +90,7 @@ void Location::_addPath(std::string &line)
 	_path = match_res[1];
 }
 
-void Location::_addRoot(std::string &line)
-{
+void Location::_addRoot(std::string &line) {
 	std::regex ptrn("^\\s*root\\s+(.*?)\\s*;?\\s*$");
 	std::smatch match_res;
 	struct stat mode;
@@ -139,8 +109,7 @@ void Location::_addRoot(std::string &line)
 	_rootPath = std::filesystem::canonical(_rootPath).generic_string();
 }
 
-void Location::_addIndex(std::string &line)
-{
+void Location::_addIndex(std::string &line) {
 	std::regex ptrn("^\\s*index\\s+([\\w\\.-]+\\.(html|htm|txt|bad_extension))\\s*;?\\s*$");
 	std::smatch match_res;
 
@@ -152,8 +121,7 @@ void Location::_addIndex(std::string &line)
 	_index = match_res[1];
 }
 
-void Location::_addAutoIndex(std::string &line)
-{
+void Location::_addAutoIndex(std::string &line) {
 	std::regex ptrn("^\\s*autoindex\\s+(on|off)\\s*$");
 	std::smatch match_res;
 
@@ -170,8 +138,7 @@ void Location::_addAutoIndex(std::string &line)
 	_autoIndexSet = true;
 }
 
-void Location::_addSession(std::string &line)
-{
+void Location::_addSession(std::string &line) {
 	std::regex ptrn("^\\s*session\\s+(on|off)\\s*;\\s*$");
 	std::smatch match_res;
 
@@ -188,8 +155,7 @@ void Location::_addSession(std::string &line)
 	_sessionSet = true;
 }
 
-void Location::_addMethods(std::string &line)
-{
+void Location::_addMethods(std::string &line) {
 	std::regex ptrn_global("^\\s*allow_methods\\s+(GET|POST|DELETE|PUT)(\\s+(GET|POST|DELETE|PUT))*\\s*;?\\s*$");
 	std::regex ptrn_local("\\s+(GET|POST|DELETE|PUT)");
 
@@ -211,8 +177,7 @@ void Location::_addMethods(std::string &line)
 	}
 }
 
-void Location::_addRedirect(std::string &line)
-{
+void Location::_addRedirect(std::string &line) {
 	std::regex ptrn("^\t{2}return\\s+(301|302)\\s+([a-zA-Z0-9\\.\\/:]*)\\s*;\\s*$");
 	std::smatch match_res;
 
@@ -226,8 +191,7 @@ void Location::_addRedirect(std::string &line)
 	_redirectPath = match_res[2];
 }
 
-void Location::_addUpload(std::string &line)
-{
+void Location::_addUpload(std::string &line) {
 	std::regex ptrn("\t{2}upload\\s+(.*)\\s*");
 	std::smatch match_res;
 	struct stat mode;
@@ -245,11 +209,9 @@ void Location::_addUpload(std::string &line)
 			"_addUpload: Specified path isn't a directory!"));
 	_uploadPath = match_res[1];
 	_uploadPath = std::filesystem::canonical(_uploadPath).generic_string();
-	// std::cout << "___________________________uploadPath: " << _uploadPath << std::endl;
 }
 
-void Location::_addCgi(std::string &line)
-{
+void Location::_addCgi(std::string &line) {
 	std::regex ptrn_global("^\\s*cgi_pass(\\s+\\S+\\s+\\S+)+\\s*;?\\s*$");
 	std::regex ptrn_local("(\\.\\w+)\\s+([^\\s;]+)");
 	struct stat mode;
@@ -260,8 +222,7 @@ void Location::_addCgi(std::string &line)
 		throw std::runtime_error("_addCgi: Expected format: \"cgi [list of cgi key value pairs];\"");
 
 	for (std::sregex_iterator itr = std::sregex_iterator(line.begin(), line.end(), ptrn_local);
-	     itr != std::sregex_iterator(); ++itr)
-	{
+	     itr != std::sregex_iterator(); ++itr) {
 		std::string ext = itr->str(1);
 		std::string path = itr->str(2);
 
@@ -278,38 +239,22 @@ void Location::_addCgi(std::string &line)
 		if (!S_ISREG(mode.st_mode))
 			throw std::runtime_error("_addCgi: Specified path isn't a regular file: " + path);
 
-		std::cout << "✅ Registered CGI: " << ext << " → " << path << std::endl;
+		std::cout << "Registered CGI: " << ext << " → " << path << std::endl;
 		_cgi.insert(std::make_pair(ext, path));
 	}
 }
 
-void Location::_addClientBodySize(const std::string& line)
-{
+void Location::_addClientBodySize(const std::string& line) {
 	std::istringstream iss(line);
 	std::string key, value;
 	if (!(iss >> key >> value))
 		throw std::runtime_error("_addClientBodySize: Expected format: 'client_max_body_size <value>'");
 
-	clientMaxBodySize = Utils::parseBody(value); // use same logic as server-wide parser
+	clientMaxBodySize = Utils::parseBody(value);
 }
 
 
 // Getters
-bool Location::getAutoIndex()
-{
+bool Location::getAutoIndex() {
 	return _autoIndex;
-}
-
-void Location::dump(void)
-{
-	std::cout << "-- Location.dump() --" << std::endl;
-	for (const auto &m : this->_methods)
-	{
-		std::cout << "\tmethod: " << m << std::endl;
-	}
-	std::cout << "\tpath: " << _path << std::endl;
-	std::cout << "\trootPath: " << _rootPath << std::endl;
-	std::cout << "\tuploadPath: " << _uploadPath << std::endl;
-
-	std::cout << "---------------------" << std::endl;
 }

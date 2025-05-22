@@ -1,6 +1,10 @@
 #include <iostream>
 #include "ClientConnection.hpp"
 
+std::unordered_map<std::string, int> method_map = { { "GET", METHOD_GET },
+						    { "POST", METHOD_POST },
+						    { "DELETE", METHOD_DELETE } };
+static std::regex r(R"((\S+) (\S+) (\S+))");
 
 ClientConnection::ClientConnection(int cfd, int port, Served *serve): fd(cfd), writeOffset(0),lastActivity(std::chrono::steady_clock::now()), serverPort(port) // ✅ 初始化
 //ClientConnection::ClientConnection(int cfd,std::shared_ptr<ServerConf> serverConf, Served* serve): fd(cfd), writeOffset(0),lastActivity(std::chrono::steady_clock::now()), serverPort(serverConf->port)
@@ -222,12 +226,7 @@ void    ClientConnection::cleanup_child(void){
     this->clean();
 }
 
-std::unordered_map<std::string, int> method_map = { { "GET", METHOD_GET },
-						    { "POST", METHOD_POST },
-						    { "DELETE", METHOD_DELETE } };
-
-ClientConnection::ClientConnection()
-{
+ClientConnection::ClientConnection() {
 	this->_bytes_read = 0;
 	this->parse_error = 0;
 	this->_state = State::STATUSLINE;
@@ -240,8 +239,7 @@ ClientConnection::ClientConnection()
 }
 
 ClientConnection::ClientConnection(bool cgi)
-	: ClientConnection()
-{
+	: ClientConnection() {
 	this->_cgi = cgi;
 }
 
@@ -266,19 +264,15 @@ const char* state_to_string(State s) {
 }
 
 
-State ClientConnection::parse(State s_start, std::string data, size_t size)
-{
+State ClientConnection::parse(State s_start, std::string data, size_t size) {
 	_buffer.append(data, size);
 	_bytes_read = size;
 	_total_read += size;
 
 	if (_state < s_start)
 		_state = s_start;
-	// std::cout << "string: " << data << "Current state: " << state_to_string(_state) << "s_state: " << state_to_string(s_start) << std::endl;
-	while (_state != State::OK && _state != State::ERROR)
-	{
-		switch (_state)
-		{
+	while (_state != State::OK && _state != State::ERROR) {
+		switch (_state) {
 		case State::PARTIALSTATUS:
 		case State::STATUSLINE:
 			_state = parse_status_line();
@@ -311,10 +305,8 @@ State ClientConnection::parse(State s_start, std::string data, size_t size)
 		}
 		if (_state >= State::PARTIALSTATUS && _state <= State::PARTIALBODY)
 			break;
-		// std::cout << "Current eee: " << this->parse_error << std::endl;
 	}
-	if (_state == State::ERROR && !this->parse_error)
-	{
+	if (_state == State::ERROR && !this->parse_error) {
 		if (_cgi)
 			this->parse_error = 502;
 		else
@@ -323,23 +315,15 @@ State ClientConnection::parse(State s_start, std::string data, size_t size)
 	return _state;
 }
 
-static std::regex r(R"((\S+) (\S+) (\S+))");
-
-State ClientConnection::parse_status_line(void)
-{
-	
-	// std::cout << "ppac state: "  << std::endl;
-	if (_total_read >= MAX_HEADER_BYTES)
-	{
+State ClientConnection::parse_status_line(void) {
+	if (_total_read >= MAX_HEADER_BYTES) {
 		this->parse_error = STATUS_BAD_REQUEST;
 		return State::ERROR;
 	}
 	size_t pos = _buffer.find(CRLF);
 
 	if (pos == std::string::npos)
-	{
 		return State::PARTIALSTATUS;
-	}
 	std::string str = _buffer.substr(0, pos);
 	std::smatch m;
 	std::cout << "ppa state: " << str << std::endl;
@@ -348,11 +332,9 @@ State ClientConnection::parse_status_line(void)
 	
 	_method_str = m[1];
 	_uri = Utils::url_decode(m[2]);
-//	std::cout << "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuurl: " << _uri << std::endl;
 	_version = m[3];
 
-	if (method_map.count(_method_str) == 0)
-	{
+	if (method_map.count(_method_str) == 0) {
 		this->parse_error = 501;
 		return State::ERROR;
 	}
@@ -363,44 +345,38 @@ State ClientConnection::parse_status_line(void)
 		return State::ERROR;
 	}
 	size_t pos_q = _uri.find("?");
-	if (pos_q != std::string::npos)
-	{
+	if (pos_q != std::string::npos) {
 		_query_string = _uri.substr(pos_q + 1, _uri.size());
 		_uri.erase(pos_q, _uri.size());
 	}
 	_method = method_map[_method_str];
-
 	_buffer.erase(0, pos + 2);
 	
 	return State::HEADER;
 }
 
-State ClientConnection::parse_header(void)
-{
+State ClientConnection::parse_header(void) {
 	if (_total_read >= MAX_HEADER_BYTES)
 		return State::ERROR;
 	size_t pos = _buffer.find(CRLF);
 
 	if (pos == std::string::npos)
 		return State::PARTIALHEADER;
-	if (pos == 0)
-	{
+	if (pos == 0) {
 		_buffer.erase(0, CRLF_LEN);
 		return State::BODY;
 	}
 	return parse_header_field(pos) ? State::HEADER : State::ERROR;
 }
 
-State ClientConnection::parse_header_cgi(void)
-{
+State ClientConnection::parse_header_cgi(void) {
 	if (_total_read >= MAX_HEADER_BYTES)
 		return State::ERROR;
 	size_t pos = _buffer.find(CRLF);
 
 	if (pos == std::string::npos)
 		return State::CGIBODY;
-	if (pos == 0)
-	{
+	if (pos == 0) {
 		_buffer.erase(0, CRLF_LEN);
 		return State::CGIBODY;
 	}
@@ -408,8 +384,7 @@ State ClientConnection::parse_header_cgi(void)
 	return _state;
 }
 
-bool ClientConnection::parse_header_field(size_t pos)
-{
+bool ClientConnection::parse_header_field(size_t pos) {
 	std::string line = _buffer.substr(0, pos);
 	_buffer.erase(0, pos + CRLF_LEN);
 
@@ -424,8 +399,7 @@ bool ClientConnection::parse_header_field(size_t pos)
 		       [](unsigned char c) { return std::tolower(c); });
 
 	_headers[key] = value;
-	if (key == "content-length")
-	{
+	if (key == "content-length") {
 		int tmp = Utils::content_len_int(value);
 		if (tmp < 0)
 			return false;
@@ -438,9 +412,7 @@ bool ClientConnection::parse_header_field(size_t pos)
 	return true;
 }
 
-State ClientConnection::parse_body(void)
-{
-	std::cout << "DDDDDDDDDDDDDDDDDDDDo we come there?\n";
+State ClientConnection::parse_body(void) {
 	if (_headers.count("host") == 0)
 		return State::ERROR;
 	if (_body_type == BODY_TYPE_CHUNKED)
@@ -456,12 +428,10 @@ State ClientConnection::parse_body(void)
 		return State::MULTIPART;
 	_body = _buffer.substr(0, _content_len);
 	_buffer.clear();
-	std::cout << "So the body is: " << _body << std::endl;
 	return State::OK;
 }
 
-State ClientConnection::parse_body_cgi(void)
-{
+State ClientConnection::parse_body_cgi(void) {
 	if (_bytes_read == 0) //eof
 		return State::OK;
 	if (_body_type == BODY_TYPE_CHUNKED)
@@ -480,13 +450,7 @@ State ClientConnection::parse_body_cgi(void)
 	return State::OK;
 }
 
-State ClientConnection::parse_chunked(void)
-{
-	// if (conf && _buffer.size() > conf->getMaxSize())
-	// {
-	// 	this->parse_error = STATUS_TOO_LARGE;
-	// 	return State::ERROR;
-	// }
+State ClientConnection::parse_chunked(void) {
 	if (_bytes_read == 0)
 		return State::OK;
 	size_t pos = _buffer.find(CRLF);
@@ -509,8 +473,7 @@ State ClientConnection::parse_chunked(void)
 	return State::CHUNKED;
 }
 
-void ClientConnection::parse_multipart(void)
-{
+void ClientConnection::parse_multipart(void) {
 	std::regex ptrn(".*boundary=(.*)");
 	std::smatch match_res;
 
@@ -528,7 +491,6 @@ void ClientConnection::parse_multipart(void)
 			break;
 		part_start += boundary.length();
 
-		// Skip \r\n after boundary
 		if (_buffer.substr(part_start, 2) == "\r\n")
 			part_start += 2;
 
@@ -562,28 +524,8 @@ void ClientConnection::parse_multipart(void)
 	_buffer.clear();
 }
 
-
-void ClientConnection::check_body_limit(void)
-{
-	if (!this->conf || _headers.count("host") == 0)
-		return;
-	// if (_body.size() > this->conf->getMaxSize())
-	// {
-	// 	this->parse_error = STATUS_TOO_LARGE;
-	// 	this->_state = State::ERROR;
-	// }
-}
-
-bool ClientConnection::is_method_allowed(std::vector<std::string> allowed, std::string method)
-{
-	// std::cout << "allow begin: " << *allowed.begin() << " allow end: " << *allowed.end() << " method: " << method << std::endl;
-	// for (const auto &var : allowed){
-	// 	std::cout << "allowwwwwwwwwww: " << var << std::endl;
-	// }
-
+bool ClientConnection::is_method_allowed(std::vector<std::string> allowed, std::string method) {
 	if (std::find(allowed.begin(), allowed.end(), method) == allowed.end())
-	{
 		return false;
-	}
 	return true;
 }

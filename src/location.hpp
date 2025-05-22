@@ -42,5 +42,4 @@ class Location {
 	void _addClientBodySize(const std::string& line);
 
 	bool getAutoIndex();
-	void dump(void);
 };

@@ -16,7 +16,6 @@ class Response {
 
 	std::map<std::string, std::string> _additional_headers;
 
-//	Location* _location;
 	ServerConf* _server = nullptr;
 
 	int _status_code;
@@ -38,14 +37,6 @@ class Response {
 	bool directory_index(std::string path);
 	std::string get_content_type(std::string uri);
 
-	bool is_cgi(std::string uri);
-	void do_cgi(void);
-
-	// void _handleCookies();
-	void _validateCookie();
-	void _createCookie();
-	void _removeInvalidCookie(std::string cookie_path);
-
 	bool init_cgi(std::shared_ptr<ClientConnection> client);
 
     public:
@@ -53,7 +44,6 @@ class Response {
 	std::ostringstream buffer;
 
 	Response(std::shared_ptr<ClientConnection> client, ServerConf* server);
-	// Response(ClientConnection* client, std::vector<std::shared_ptr<Location>>& locations);
 	void finish_response(void);
 	void finish_cgi(std::shared_ptr<ClientConnection> req_cgi);
 	void set_error(int code);
