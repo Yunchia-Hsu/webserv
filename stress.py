@@ -1,13 +1,25 @@
-# stress_test.py
+# stress_test_with_stats.py
 import requests
 import threading
 
+success = 0
+fail = 0
+lock = threading.Lock()
+
 def worker():
-    for _ in range(100):
+    global success, fail
+    for _ in range(1000):
         try:
-            requests.get("http://localhost:8000/index.html")
+            r = requests.get("http://localhost:8000", timeout=5)
+            if r.status_code == 200:
+                with lock:
+                    success += 1
+            else:
+                with lock:
+                    fail += 1
         except:
-            pass
+            with lock:
+                fail += 1
 
 threads = []
 for _ in range(50):  # 50 concurrent workers
@@ -17,3 +29,10 @@ for _ in range(50):  # 50 concurrent workers
 
 for t in threads:
     t.join()
+
+total = success + fail
+availability = (success / total) * 100 if total else 0
+print(f"Total Requests: {total}")
+print(f"Success: {success}")
+print(f"Fail: {fail}")
+print(f"Availability: {availability:.2f}%")
