@@ -32,7 +32,7 @@ Compile the server:
 make
 
 Run with:
-```bash
+
 ./webserv path/to/config.conf
 
 
