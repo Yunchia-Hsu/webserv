@@ -30,9 +30,10 @@ making it suitable for serving static websites or acting as a learning tool for 
 Compile the server:
 ```bash
 make
+```
 
 Run with:
-
+```bash
 ./webserv path/to/config.conf
-
+```
 
